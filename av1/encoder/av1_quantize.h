@@ -81,11 +81,24 @@ typedef struct {
                   v_dequant_QTX[QINDEX_RANGE][8]);  // 8: SIMD width
 } Dequants;
 
+// The DeltaQuantParams structure holds the dc/ac deltaq parameters.
+typedef struct {
+  int y_dc_delta_q;
+  int u_dc_delta_q;
+  int u_ac_delta_q;
+  int v_dc_delta_q;
+  int v_ac_delta_q;
+} DeltaQuantParams;
+
 typedef struct {
   // Quantization parameters for internal quantizer setup.
   QUANTS quants;
   // Dequantization parameters for internal quantizer setup.
   Dequants dequants;
+  // Deltaq parameters to track the state of the dc/ac deltaq parameters in
+  // cm->quant_params. It is used to decide whether the quantizer tables need
+  // to be re-initialized.
+  DeltaQuantParams prev_deltaq_params;
 } EncQuantDequantParams;
 
 struct AV1_COMP;
@@ -94,7 +107,7 @@ struct AV1Common;
 void av1_frame_init_quantizer(struct AV1_COMP *cpi);
 
 void av1_init_plane_quantizers(const struct AV1_COMP *cpi, MACROBLOCK *x,
-                               int segment_id);
+                               int segment_id, const int do_update);
 
 void av1_build_quantizer(aom_bit_depth_t bit_depth, int y_dc_delta_q,
                          int u_dc_delta_q, int u_ac_delta_q, int v_dc_delta_q,

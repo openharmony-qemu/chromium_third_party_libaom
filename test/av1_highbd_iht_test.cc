@@ -75,6 +75,7 @@ class AV1HighbdInvHTNxN : public ::testing::TestWithParam<IHbdHtParam> {
 
     input_ = reinterpret_cast<int16_t *>(
         aom_memalign(16, sizeof(input_[0]) * num_coeffs_));
+    ASSERT_NE(input_, nullptr);
 
     // Note:
     // Inverse transform input buffer is 32-byte aligned
@@ -82,10 +83,13 @@ class AV1HighbdInvHTNxN : public ::testing::TestWithParam<IHbdHtParam> {
     // void alloc_mode_context().
     coeffs_ = reinterpret_cast<int32_t *>(
         aom_memalign(32, sizeof(coeffs_[0]) * num_coeffs_));
+    ASSERT_NE(coeffs_, nullptr);
     output_ = reinterpret_cast<uint16_t *>(
         aom_memalign(32, sizeof(output_[0]) * num_coeffs_));
+    ASSERT_NE(output_, nullptr);
     output_ref_ = reinterpret_cast<uint16_t *>(
         aom_memalign(32, sizeof(output_ref_[0]) * num_coeffs_));
+    ASSERT_NE(output_ref_, nullptr);
   }
 
   virtual void TearDown() {
@@ -294,9 +298,8 @@ void AV1HighbdInvTxfm2d::RunAV1InvTxfm2dTest(TX_TYPE tx_type_, TX_SIZE tx_size_,
       for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
           ASSERT_EQ(ref_output[r * stride + c], output[r * stride + c])
-              << "[" << r << "," << c << "] " << cnt
-              << " tx_size: " << static_cast<int>(tx_size_)
-              << " bit_depth_: " << bit_depth_
+              << "[" << r << "," << c << "] " << cnt << " tx_size: " << cols
+              << "x" << rows << " bit_depth_: " << bit_depth_
               << " tx_type: " << tx_type_name[tx_type_] << " eob " << eob;
         }
       }
