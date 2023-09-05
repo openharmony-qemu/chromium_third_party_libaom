@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <oatconfig>
+        <policylist>
+            <policy name="projectPolicy" desc="">
+                <policyitem type="compatibility" name="cmake-format" path=".*" desc="" />
+                <policyitem type="compatibility" name="Alliance" path="aom_dsp/flow_estimation/x86.*" desc="" />
+            </policy>
+        </policylist>
+        <filefilterlist>
+            <filefilter name="defaultPolicyFilter"
+                desc="Filters for compatibility,license header policies">
+                <filteritem type="filepath" name="third_party/llvm-10.0/llvm/include/llvm/Support/LICENSE.TXT"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/SPIRV-Tools/BUILD.bazel"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/llvm-subzero/LICENSE.TXT"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/subzero/LICENSE.TXT"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/subzero/bloat/README.chromium"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/llvm-10.0/Android.bp"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/SPIRV-Headers/BUILD.bazel"
+                    desc="" />
+                <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+                <filteritem type="filepath" name=".*mk"
+                    desc="" />
+                <filteritem type="filepath" name=".*libaom"
+                    desc="" />
+                <filteritem type="filepath" name="PATENTS"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/libwebm/PATENTS.TXT"
+                    desc="" />
+                <filteritem type="filepath" name="third_party/SVT-AV1/LICENSE.md"
+                    desc="" />
+                <filteritem type="filepath" name="mainpage.dox"
+                    desc="" />
+                </filefilter>
+                <filefilter name="defaultFilter">
+                <filteritem type="filepath" name="README.OpenSource"
+                    desc="" />
+            </filefilter> 
+        </filefilterlist>
+        <licensematcherlist>
+            <licensematcher name="cmake-format" desc="">
+                <licensetext name="
+                # Generated with cmake-format 0.5.1
+            " desc="" />
+            </licensematcher> 
+            <licensematcher name="Alliance" desc="">
+                <licensetext name="
+                * Copyright (c) 2022, Alliance for Open Media.
+            " desc="" />
+            </licensematcher>
+        </licensematcherlist>
+    </oatconfig>
+</configuration>
