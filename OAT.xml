@@ -3,56 +3,63 @@
     <oatconfig>
         <policylist>
             <policy name="projectPolicy" desc="">
-                <policyitem type="compatibility" name="cmake-format" path=".*" desc="" />
-                <policyitem type="compatibility" name="Alliance" path="aom_dsp/flow_estimation/x86.*" desc="" />
+                <policyitem type="compatibility" name="MS-RL" path=".*" desc="" />
+                 <policyitem type="compatibility" name="Unknown License file reference" path=".*" desc="" />
+                 <policyitem type="compatibility" name="Proprietary License" path=".*" desc="" />
             </policy>
         </policylist>
         <filefilterlist>
             <filefilter name="defaultPolicyFilter"
                 desc="Filters for compatibility,license header policies">
-                <filteritem type="filepath" name="third_party/llvm-10.0/llvm/include/llvm/Support/LICENSE.TXT"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/SPIRV-Tools/BUILD.bazel"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/llvm-subzero/LICENSE.TXT"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/subzero/LICENSE.TXT"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/subzero/bloat/README.chromium"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/llvm-10.0/Android.bp"
-                    desc="" />
-                <filteritem type="filepath" name="third_party/SPIRV-Headers/BUILD.bazel"
-                    desc="" />
-                <filteritem type="filepath" name="README.OpenSource"
+                <filteritem type="filepath" name="mainpage.dox"
                     desc="" />
                 <filteritem type="filepath" name=".*mk"
                     desc="" />
-                <filteritem type="filepath" name=".*libaom"
-                    desc="" />
-                <filteritem type="filepath" name="PATENTS"
-                    desc="" />
                 <filteritem type="filepath" name="third_party/libwebm/PATENTS.TXT"
                     desc="" />
-                <filteritem type="filepath" name="third_party/SVT-AV1/LICENSE.md"
+                <filteritem type="filepath" name=".*libaom"
                     desc="" />
-                <filteritem type="filepath" name="mainpage.dox"
+                <filteritem type="filepath" name=".*py"
+                    desc="" />
+                <filteritem type="filepath" name="README.OpenSource"
                     desc="" />
                 </filefilter>
                 <filefilter name="defaultFilter">
                 <filteritem type="filepath" name="README.OpenSource"
                     desc="" />
+                <filteritem type="filepath" name=".*png"
+                    desc="" />
+                <filteritem type="filepath" name="aom.git-0144dca8bdd00f398f5ed44f207563fb8d7d5b73.tar.gz"
+                    desc="" />
             </filefilter> 
         </filefilterlist>
         <licensematcherlist>
-            <licensematcher name="cmake-format" desc="">
+            <licensematcher name="Proprietary License" desc="">
                 <licensetext name="
-                # Generated with cmake-format 0.5.1
+                Redistribution and use in source and binary forms, with or without
+                modification, are permitted (subject to the limitations in the disclaimer below)
+                provided that the following conditions are met:
             " desc="" />
-            </licensematcher> 
-            <licensematcher name="Alliance" desc="">
+            </licensematcher>
+            <licensematcher name="Unknown License file reference" desc="">
                 <licensetext name="
-                * Copyright (c) 2022, Alliance for Open Media.
+                Patent License. Subject to the terms and conditions of this License, each
+                Licensor, on behalf of itself and successors in interest and assigns,
+                grants Licensee a non-sublicensable, perpetual, worldwide, non-exclusive,
+                no-charge, royalty-free, irrevocable (except as expressly stated in this
+                License) patent license to its Necessary Claims to make, use, sell, offer
+                for sale, import or distribute any Implementation.
+            " desc="" />
+            </licensematcher>
+            <licensematcher name="MS-RL" desc="">
+                <licensetext name="
+                * This source code is subject to the terms of the BSD 3-Clause Clear License
+                * and the Alliance for Open Media Patent License 1.0. If the BSD 3-Clause Clear
+                * License was not distributed with this source code in the LICENSE file, you
+                * can obtain it at aomedia.org/license/software-license/bsd-3-c-c/.  If the
+                * Alliance for Open Media Patent License 1.0 was not distributed with this
+                * source code in the PATENTS file, you can obtain it at
+                * aomedia.org/license/patent-license/.
             " desc="" />
             </licensematcher>
         </licensematcherlist>
