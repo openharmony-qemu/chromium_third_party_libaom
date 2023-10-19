@@ -118,21 +118,23 @@ used to filter file path.
                 License: BSD
                 License File: LICENSE
             " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
                 <licensetext name="
                 URL: https://github.com/edrosten/fast-C-src
                 Version: 391d5e939eb1545d24c10533d7de424db8d9c191
                 License: BSD
                 License File: LICENSE
             " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
                 <licensetext name="
                 URL: https://github.com/google/googletest
                 Version: release-1.12.1
                 License: BSD
                 License File: LICENSE
+            " desc="" />
+                <licensetext name="
+                URL: https://chromium.googlesource.com/webm/libwebm
+                Version: ee0bab576c338c9807249b99588e352b7268cb62
+                License: BSD
+                License File: LICENSE.txt
             " desc="" />
             </licensematcher>
             <licensematcher name="Google Patent License for WebM" desc="">
@@ -154,14 +156,6 @@ used to filter file path.
                 patent infringement, then any patent rights granted to you under this License
                 for these implementations of WebM shall terminate as of the date such
                 litigation is filed.
-            " desc="" />
-            </licensematcher>
-            <licensematcher name="BSD-3-Clause" desc="">
-                <licensetext name="
-                URL: https://chromium.googlesource.com/webm/libwebm
-                Version: ee0bab576c338c9807249b99588e352b7268cb62
-                License: BSD
-                License File: LICENSE.txt
             " desc="" />
             </licensematcher>
         </licensematcherlist>
