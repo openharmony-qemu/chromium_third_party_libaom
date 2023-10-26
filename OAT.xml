@@ -63,7 +63,6 @@ used to filter file path.
         <policylist>
             <policy name="projectPolicy" desc="">
                 <policyitem type="compatibility" name="MS-RL" path="aom_dsp/flow_estimation/x86/disflow_sse4.c" desc="经法务确认经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="Unknown License file reference" path="PATENTS" desc="经法务确认经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Proprietary License" path="third_party/SVT-AV1/LICENSE.md" desc="经法务确认经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="Google Patent License for WebM" path="third_party/libwebm/PATENTS.TXT" desc="经法务确认经法务确认为宽松型许可证" />
             </policy>
@@ -79,6 +78,7 @@ used to filter file path.
                 <filefilter name="defaultFilter">
                 <filteritem type="filepath" name=".*png" desc="chromium原生二进制文件,不会使用" />
                 <filteritem type="filepath" name="aom.git-0144dca8bdd00f398f5ed44f207563fb8d7d5b73.tar.gz" desc="chromium原生二进制文件,不会使用" />
+                <filteritem type="filepath" name="PATENTS" desc="经确认该文件不会使用" />
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
