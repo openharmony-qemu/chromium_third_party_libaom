@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2017, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -12,13 +12,14 @@
 #include <algorithm>
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
 #include "config/av1_rtcd.h"
 
 #include "aom/aom_codec.h"
+#include "aom_dsp/txfm_common.h"
 #include "aom_ports/aom_timer.h"
 #include "av1/encoder/encoder.h"
 #include "av1/common/scan.h"
@@ -100,9 +101,9 @@ class QuantizeTestBase
         tx_size_(GET_TEMPLATE_PARAM(2)), type_(GET_TEMPLATE_PARAM(3)),
         bd_(GET_TEMPLATE_PARAM(4)) {}
 
-  virtual ~QuantizeTestBase() {}
+  ~QuantizeTestBase() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     qtab_ = reinterpret_cast<QuanTable *>(aom_memalign(32, sizeof(*qtab_)));
     ASSERT_NE(qtab_, nullptr);
     const int n_coeffs = coeff_num();
@@ -112,7 +113,7 @@ class QuantizeTestBase
     InitQuantizer();
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     aom_free(qtab_);
     qtab_ = nullptr;
     aom_free(coeff_);
@@ -149,8 +150,8 @@ class QuantizeTestBase
     // Testing uses luminance quantization table
     const int16_t *zbin = qtab_->quant.y_zbin[q];
 
-    const int16_t *round = 0;
-    const int16_t *quant = 0;
+    const int16_t *round = nullptr;
+    const int16_t *quant = nullptr;
     if (type_ == TYPE_B) {
       round = qtab_->quant.y_round[q];
       quant = qtab_->quant.y_quant[q];
@@ -482,9 +483,9 @@ const QuantizeParam<LPQuantizeFunc> kLPQParamArrayAvx2[] = {
   make_tuple(&av1_quantize_lp_c, &av1_quantize_lp_avx2,
              static_cast<TX_SIZE>(TX_16X16), TYPE_FP, AOM_BITS_8),
   make_tuple(&av1_quantize_lp_c, &av1_quantize_lp_avx2,
-             static_cast<TX_SIZE>(TX_32X32), TYPE_FP, AOM_BITS_8),
+             static_cast<TX_SIZE>(TX_8X8), TYPE_FP, AOM_BITS_8),
   make_tuple(&av1_quantize_lp_c, &av1_quantize_lp_avx2,
-             static_cast<TX_SIZE>(TX_64X64), TYPE_FP, AOM_BITS_8)
+             static_cast<TX_SIZE>(TX_4X4), TYPE_FP, AOM_BITS_8)
 };
 
 INSTANTIATE_TEST_SUITE_P(AVX2, LowPrecisionQuantizeTest,
@@ -704,9 +705,9 @@ const QuantizeParam<LPQuantizeFunc> kLPQParamArrayNEON[] = {
   make_tuple(av1_quantize_lp_c, av1_quantize_lp_neon,
              static_cast<TX_SIZE>(TX_16X16), TYPE_FP, AOM_BITS_8),
   make_tuple(av1_quantize_lp_c, av1_quantize_lp_neon,
-             static_cast<TX_SIZE>(TX_32X32), TYPE_FP, AOM_BITS_8),
+             static_cast<TX_SIZE>(TX_8X8), TYPE_FP, AOM_BITS_8),
   make_tuple(av1_quantize_lp_c, av1_quantize_lp_neon,
-             static_cast<TX_SIZE>(TX_64X64), TYPE_FP, AOM_BITS_8)
+             static_cast<TX_SIZE>(TX_4X4), TYPE_FP, AOM_BITS_8)
 };
 
 INSTANTIATE_TEST_SUITE_P(NEON, LowPrecisionQuantizeTest,
@@ -768,7 +769,7 @@ INSTANTIATE_TEST_SUITE_P(NEON, FullPrecisionQuantizeTest,
                          ::testing::ValuesIn(kQParamArrayNEON));
 #endif
 
-#if HAVE_SSSE3 && ARCH_X86_64
+#if HAVE_SSSE3 && AOM_ARCH_X86_64
 INSTANTIATE_TEST_SUITE_P(
     SSSE3, FullPrecisionQuantizeTest,
     ::testing::Values(
@@ -779,7 +780,7 @@ INSTANTIATE_TEST_SUITE_P(
         make_tuple(&aom_quantize_b_64x64_c, &aom_quantize_b_64x64_ssse3,
                    static_cast<TX_SIZE>(TX_64X64), TYPE_B, AOM_BITS_8)));
 
-#endif  // HAVE_SSSE3 && ARCH_X86_64
+#endif  // HAVE_SSSE3 && AOM_ARCH_X86_64
 
 #if HAVE_AVX
 INSTANTIATE_TEST_SUITE_P(

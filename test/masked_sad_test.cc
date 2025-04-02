@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -13,7 +13,7 @@
 #include <string.h>
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
@@ -45,8 +45,8 @@ typedef std::tuple<MaskedSADx4Func, MaskedSADx4Func> MaskedSADx4Param;
 
 class MaskedSADTestBase : public ::testing::Test {
  public:
-  virtual ~MaskedSADTestBase() {}
-  virtual void SetUp() = 0;
+  ~MaskedSADTestBase() override = default;
+  void SetUp() override = 0;
   virtual void runRef(const uint8_t *src_ptr, int src_stride,
                       const uint8_t *ref_ptr[], int ref_stride,
                       const uint8_t *second_pred, const uint8_t *msk,
@@ -58,58 +58,32 @@ class MaskedSADTestBase : public ::testing::Test {
                        int msk_stride, int inv_mask, unsigned sads[],
                        int times) = 0;
 
-  virtual void TearDown() {}
   void runMaskedSADTest(int run_times);
 };
 
 class MaskedSADTest : public MaskedSADTestBase,
                       public ::testing::WithParamInterface<MaskedSADParam> {
  public:
-  virtual ~MaskedSADTest() {}
-  virtual void SetUp() {
+  ~MaskedSADTest() override = default;
+  void SetUp() override {
     maskedSAD_op_ = GET_PARAM(0);
     ref_maskedSAD_op_ = GET_PARAM(1);
   }
 
-  virtual void runRef(const uint8_t *src_ptr, int src_stride,
-                      const uint8_t *ref_ptr[], int ref_stride,
-                      const uint8_t *second_pred, const uint8_t *msk,
-                      int msk_stride, int inv_mask, unsigned sads[], int times);
-  virtual void runTest(const uint8_t *src_ptr, int src_stride,
-                       const uint8_t *ref_ptr[], int ref_stride,
-                       const uint8_t *second_pred, const uint8_t *msk,
-                       int msk_stride, int inv_mask, unsigned sads[],
-                       int times);
+  void runRef(const uint8_t *src_ptr, int src_stride, const uint8_t *ref_ptr[],
+              int ref_stride, const uint8_t *second_pred, const uint8_t *msk,
+              int msk_stride, int inv_mask, unsigned sads[],
+              int times) override;
+  void runTest(const uint8_t *src_ptr, int src_stride, const uint8_t *ref_ptr[],
+               int ref_stride, const uint8_t *second_pred, const uint8_t *msk,
+               int msk_stride, int inv_mask, unsigned sads[],
+               int times) override;
 
  protected:
   MaskedSADFunc maskedSAD_op_;
   MaskedSADFunc ref_maskedSAD_op_;
 };
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MaskedSADTest);
-
-class MaskedSADx4Test : public MaskedSADTestBase,
-                        public ::testing::WithParamInterface<MaskedSADx4Param> {
- public:
-  virtual ~MaskedSADx4Test() {}
-  virtual void SetUp() {
-    maskedSAD_op_ = GET_PARAM(0);
-    ref_maskedSAD_op_ = GET_PARAM(1);
-  }
-  virtual void runRef(const uint8_t *src_ptr, int src_stride,
-                      const uint8_t *ref_ptr[], int ref_stride,
-                      const uint8_t *second_pred, const uint8_t *msk,
-                      int msk_stride, int inv_mask, unsigned sads[], int times);
-  virtual void runTest(const uint8_t *src_ptr, int src_stride,
-                       const uint8_t *ref_ptr[], int ref_stride,
-                       const uint8_t *second_pred, const uint8_t *msk,
-                       int msk_stride, int inv_mask, unsigned sads[],
-                       int times);
-
- protected:
-  MaskedSADx4Func maskedSAD_op_;
-  MaskedSADx4Func ref_maskedSAD_op_;
-};
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MaskedSADx4Test);
 
 void MaskedSADTest::runRef(const uint8_t *src_ptr, int src_stride,
                            const uint8_t *ref_ptr[], int ref_stride,
@@ -135,34 +109,6 @@ void MaskedSADTest::runTest(const uint8_t *src_ptr, int src_stride,
       API_REGISTER_STATE_CHECK(
           sads[0] = maskedSAD_op_(src_ptr, src_stride, ref_ptr[0], ref_stride,
                                   second_pred, msk, msk_stride, invert_mask));
-    }
-  }
-}
-
-void MaskedSADx4Test::runRef(const uint8_t *src_ptr, int src_stride,
-                             const uint8_t *ref_ptr[], int ref_stride,
-                             const uint8_t *second_pred, const uint8_t *msk,
-                             int msk_stride, int invert_mask, unsigned sads[],
-                             int times) {
-  for (int repeat = 0; repeat < times; ++repeat) {
-    ref_maskedSAD_op_(src_ptr, src_stride, ref_ptr, ref_stride, second_pred,
-                      msk, msk_stride, invert_mask, sads);
-  }
-}
-
-void MaskedSADx4Test::runTest(const uint8_t *src_ptr, int src_stride,
-                              const uint8_t *ref_ptr[], int ref_stride,
-                              const uint8_t *second_pred, const uint8_t *msk,
-                              int msk_stride, int invert_mask, unsigned sads[],
-                              int times) {
-  if (times == 1) {
-    API_REGISTER_STATE_CHECK(maskedSAD_op_(src_ptr, src_stride, ref_ptr,
-                                           ref_stride, second_pred, msk,
-                                           msk_stride, invert_mask, sads));
-  } else {
-    for (int repeat = 0; repeat < times; ++repeat) {
-      maskedSAD_op_(src_ptr, src_stride, ref_ptr, ref_stride, second_pred, msk,
-                    msk_stride, invert_mask, sads);
     }
   }
 }
@@ -248,10 +194,6 @@ TEST_P(MaskedSADTest, OperationCheck) { runMaskedSADTest(1); }
 
 TEST_P(MaskedSADTest, DISABLED_Speed) { runMaskedSADTest(2000000); }
 
-TEST_P(MaskedSADx4Test, OperationCheck) { runMaskedSADTest(1); }
-
-TEST_P(MaskedSADx4Test, DISABLED_Speed) { runMaskedSADTest(2000000); }
-
 #if CONFIG_AV1_HIGHBITDEPTH
 typedef unsigned int (*HighbdMaskedSADFunc)(const uint8_t *src, int src_stride,
                                             const uint8_t *ref, int ref_stride,
@@ -264,13 +206,12 @@ typedef std::tuple<HighbdMaskedSADFunc, HighbdMaskedSADFunc>
 class HighbdMaskedSADTest
     : public ::testing::TestWithParam<HighbdMaskedSADParam> {
  public:
-  virtual ~HighbdMaskedSADTest() {}
-  virtual void SetUp() {
+  ~HighbdMaskedSADTest() override = default;
+  void SetUp() override {
     maskedSAD_op_ = GET_PARAM(0);
     ref_maskedSAD_op_ = GET_PARAM(1);
   }
 
-  virtual void TearDown() {}
   void runHighbdMaskedSADTest(int run_times);
 
  protected:
@@ -379,36 +320,6 @@ const MaskedSADParam msad_test[] = {
 };
 
 INSTANTIATE_TEST_SUITE_P(SSSE3, MaskedSADTest, ::testing::ValuesIn(msad_test));
-
-const MaskedSADx4Param msadx4_test[] = {
-  make_tuple(&aom_masked_sad4x4x4d_ssse3, &aom_masked_sad4x4x4d_c),
-  make_tuple(&aom_masked_sad4x8x4d_ssse3, &aom_masked_sad4x8x4d_c),
-  make_tuple(&aom_masked_sad8x4x4d_ssse3, &aom_masked_sad8x4x4d_c),
-  make_tuple(&aom_masked_sad8x8x4d_ssse3, &aom_masked_sad8x8x4d_c),
-  make_tuple(&aom_masked_sad8x16x4d_ssse3, &aom_masked_sad8x16x4d_c),
-  make_tuple(&aom_masked_sad16x8x4d_ssse3, &aom_masked_sad16x8x4d_c),
-  make_tuple(&aom_masked_sad16x16x4d_ssse3, &aom_masked_sad16x16x4d_c),
-  make_tuple(&aom_masked_sad16x32x4d_ssse3, &aom_masked_sad16x32x4d_c),
-  make_tuple(&aom_masked_sad32x16x4d_ssse3, &aom_masked_sad32x16x4d_c),
-  make_tuple(&aom_masked_sad32x32x4d_ssse3, &aom_masked_sad32x32x4d_c),
-  make_tuple(&aom_masked_sad32x64x4d_ssse3, &aom_masked_sad32x64x4d_c),
-  make_tuple(&aom_masked_sad64x32x4d_ssse3, &aom_masked_sad64x32x4d_c),
-  make_tuple(&aom_masked_sad64x64x4d_ssse3, &aom_masked_sad64x64x4d_c),
-  make_tuple(&aom_masked_sad64x128x4d_ssse3, &aom_masked_sad64x128x4d_c),
-  make_tuple(&aom_masked_sad128x64x4d_ssse3, &aom_masked_sad128x64x4d_c),
-  make_tuple(&aom_masked_sad128x128x4d_ssse3, &aom_masked_sad128x128x4d_c),
-#if !CONFIG_REALTIME_ONLY
-  make_tuple(&aom_masked_sad4x16x4d_ssse3, &aom_masked_sad4x16x4d_c),
-  make_tuple(&aom_masked_sad16x4x4d_ssse3, &aom_masked_sad16x4x4d_c),
-  make_tuple(&aom_masked_sad8x32x4d_ssse3, &aom_masked_sad8x32x4d_c),
-  make_tuple(&aom_masked_sad32x8x4d_ssse3, &aom_masked_sad32x8x4d_c),
-  make_tuple(&aom_masked_sad16x64x4d_ssse3, &aom_masked_sad16x64x4d_c),
-  make_tuple(&aom_masked_sad64x16x4d_ssse3, &aom_masked_sad64x16x4d_c),
-#endif
-};
-
-INSTANTIATE_TEST_SUITE_P(SSSE3, MaskedSADx4Test,
-                         ::testing::ValuesIn(msadx4_test));
 
 #if CONFIG_AV1_HIGHBITDEPTH
 const HighbdMaskedSADParam hbd_msad_test[] = {
@@ -551,6 +462,41 @@ const MaskedSADParam msad_test[] = {
 };
 
 INSTANTIATE_TEST_SUITE_P(NEON, MaskedSADTest, ::testing::ValuesIn(msad_test));
+
+#if CONFIG_AV1_HIGHBITDEPTH
+const MaskedSADParam hbd_msad_neon_test[] = {
+  make_tuple(&aom_highbd_masked_sad4x4_neon, &aom_highbd_masked_sad4x4_c),
+  make_tuple(&aom_highbd_masked_sad4x8_neon, &aom_highbd_masked_sad4x8_c),
+  make_tuple(&aom_highbd_masked_sad8x4_neon, &aom_highbd_masked_sad8x4_c),
+  make_tuple(&aom_highbd_masked_sad8x8_neon, &aom_highbd_masked_sad8x8_c),
+  make_tuple(&aom_highbd_masked_sad8x16_neon, &aom_highbd_masked_sad8x16_c),
+  make_tuple(&aom_highbd_masked_sad16x8_neon, &aom_highbd_masked_sad16x8_c),
+  make_tuple(&aom_highbd_masked_sad16x16_neon, &aom_highbd_masked_sad16x16_c),
+  make_tuple(&aom_highbd_masked_sad16x32_neon, &aom_highbd_masked_sad16x32_c),
+  make_tuple(&aom_highbd_masked_sad32x16_neon, &aom_highbd_masked_sad32x16_c),
+  make_tuple(&aom_highbd_masked_sad32x32_neon, &aom_highbd_masked_sad32x32_c),
+  make_tuple(&aom_highbd_masked_sad32x64_neon, &aom_highbd_masked_sad32x64_c),
+  make_tuple(&aom_highbd_masked_sad64x32_neon, &aom_highbd_masked_sad64x32_c),
+  make_tuple(&aom_highbd_masked_sad64x64_neon, &aom_highbd_masked_sad64x64_c),
+  make_tuple(&aom_highbd_masked_sad64x128_neon, &aom_highbd_masked_sad64x128_c),
+  make_tuple(&aom_highbd_masked_sad128x64_neon, &aom_highbd_masked_sad128x64_c),
+  make_tuple(&aom_highbd_masked_sad128x128_neon,
+             &aom_highbd_masked_sad128x128_c),
+#if !CONFIG_REALTIME_ONLY
+  make_tuple(&aom_highbd_masked_sad4x16_neon, &aom_highbd_masked_sad4x16_c),
+  make_tuple(&aom_highbd_masked_sad16x4_neon, &aom_highbd_masked_sad16x4_c),
+  make_tuple(&aom_highbd_masked_sad8x32_neon, &aom_highbd_masked_sad8x32_c),
+  make_tuple(&aom_highbd_masked_sad32x8_neon, &aom_highbd_masked_sad32x8_c),
+  make_tuple(&aom_highbd_masked_sad16x64_neon, &aom_highbd_masked_sad16x64_c),
+  make_tuple(&aom_highbd_masked_sad64x16_neon, &aom_highbd_masked_sad64x16_c),
+#endif  // !CONFIG_REALTIME_ONLY
+};
+
+INSTANTIATE_TEST_SUITE_P(NEON, HighbdMaskedSADTest,
+                         ::testing::ValuesIn(hbd_msad_neon_test));
+
+#endif  // CONFIG_AV1_HIGHBITDEPTH
+
 #endif  // HAVE_NEON
 
 }  // namespace

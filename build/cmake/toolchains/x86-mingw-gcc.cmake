@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017, Alliance for Open Media. All rights reserved
+# Copyright (c) 2017, Alliance for Open Media. All rights reserved.
 #
 # This source code is subject to the terms of the BSD 2 Clause License and the
 # Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License was
@@ -20,6 +20,9 @@ set(CMAKE_CXX_FLAGS_INIT "-m32")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-m32")
 
 if("${CROSS}" STREQUAL "")
+
+  # Default the cross compiler prefix to one used by Debian and other package
+  # management systems.
   set(CROSS i686-w64-mingw32-)
 endif()
 

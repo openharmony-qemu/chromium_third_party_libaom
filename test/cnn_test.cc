@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2019, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -13,7 +13,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
 
@@ -2520,7 +2520,7 @@ typedef libaom_test::FuncParam<CNNConvolveNoMaxpoolPaddingValidFunc>
 
 class CNNConvolveTest : public ::testing::TestWithParam<CNNConvolveTestFuncs> {
  protected:
-  virtual void SetUp() { params_ = GetParam(); }
+  void SetUp() override { params_ = GetParam(); }
 
   void RunCNNConvolveSetup(int run_times) {
     int in_width = 65;
@@ -2649,6 +2649,13 @@ INSTANTIATE_TEST_SUITE_P(AVX2, CNNConvolveTest,
                          ::testing::Values(CNNConvolveTestFuncs(
                              &av1_cnn_convolve_no_maxpool_padding_valid_c,
                              &av1_cnn_convolve_no_maxpool_padding_valid_avx2)));
+#endif
+
+#if HAVE_NEON
+INSTANTIATE_TEST_SUITE_P(NEON, CNNConvolveTest,
+                         ::testing::Values(CNNConvolveTestFuncs(
+                             &av1_cnn_convolve_no_maxpool_padding_valid_c,
+                             &av1_cnn_convolve_no_maxpool_padding_valid_neon)));
 #endif
 
 }  // namespace

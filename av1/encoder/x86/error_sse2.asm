@@ -1,5 +1,5 @@
 ;
-; Copyright (c) 2016, Alliance for Open Media. All rights reserved
+; Copyright (c) 2016, Alliance for Open Media. All rights reserved.
 ;
 ; This source code is subject to the terms of the BSD 2 Clause License and
 ; the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -75,7 +75,7 @@ cglobal block_error, 3, 3, 8, uqc, dqc, size, ssz
   movhlps   m7, m6
   paddq     m4, m5
   paddq     m6, m7
-%if ARCH_X86_64
+%if AOM_ARCH_X86_64
   movq    rax, m4
   movq [sszq], m6
 %else

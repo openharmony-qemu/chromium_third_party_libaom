@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2021, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -15,7 +15,7 @@
 
 #include "aom/aom_integer.h"
 
-static AOM_INLINE __m128i reduce_sum_epi64(__m128i reg) {
+static inline __m128i reduce_sum_epi64(__m128i reg) {
   __m128i reg_hi = _mm_srli_si128(reg, 8);
   reg = _mm_add_epi64(reg, reg_hi);
 
@@ -65,11 +65,11 @@ int64_t av1_block_error_lp_sse2(const int16_t *coeff, const int16_t *dqcoeff,
   accum = reduce_sum_epi64(accum);
 
   // Store the results.
-#if ARCH_X86_64
+#if AOM_ARCH_X86_64
   return _mm_cvtsi128_si64(accum);
 #else
   int64_t result;
   _mm_storel_epi64((__m128i *)&result, accum);
   return result;
-#endif  // ARCH_X86_64
+#endif  // AOM_ARCH_X86_64
 }

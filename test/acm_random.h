@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -12,7 +12,7 @@
 #ifndef AOM_TEST_ACM_RANDOM_H_
 #define AOM_TEST_ACM_RANDOM_H_
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "aom/aom_integer.h"
 
@@ -57,12 +57,6 @@ class ACMRandom {
         random_.Generate(testing::internal::Random::kMaxRange);
     // There's a bit more entropy in the upper bits of this implementation.
     return (value >> 19) & 0xfff;
-  }
-
-  int16_t Rand9Signed() {
-    // Use 9 bits: values between 255 (0x0FF) and -256 (0x100).
-    const uint32_t value = random_.Generate(512);
-    return static_cast<int16_t>(value) - 256;
   }
 
   uint8_t Rand8() {

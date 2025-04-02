@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,7 +11,7 @@
 
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
 
@@ -63,9 +63,9 @@ typedef tuple<HbdHtFunc, IHbdHtFunc, IHbdHtFunc, int, TX_TYPE, int> IHbdHtParam;
 
 class AV1HighbdInvHTNxN : public ::testing::TestWithParam<IHbdHtParam> {
  public:
-  virtual ~AV1HighbdInvHTNxN() {}
+  ~AV1HighbdInvHTNxN() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     txfm_ref_ = GET_PARAM(0);
     inv_txfm_ = GET_PARAM(1);
     inv_txfm_ref_ = GET_PARAM(2);
@@ -92,7 +92,7 @@ class AV1HighbdInvHTNxN : public ::testing::TestWithParam<IHbdHtParam> {
     ASSERT_NE(output_ref_, nullptr);
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     aom_free(input_);
     aom_free(coeffs_);
     aom_free(output_);
@@ -200,7 +200,7 @@ typedef std::tuple<const HighbdInvTxfm2dFunc> AV1HighbdInvTxfm2dParam;
 class AV1HighbdInvTxfm2d
     : public ::testing::TestWithParam<AV1HighbdInvTxfm2dParam> {
  public:
-  virtual void SetUp() { target_func_ = GET_PARAM(0); }
+  void SetUp() override { target_func_ = GET_PARAM(0); }
   void RunAV1InvTxfm2dTest(TX_TYPE tx_type, TX_SIZE tx_size, int run_times,
                            int bit_depth, int gt_int16 = 0);
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019, Alliance for Open Media. All rights reserved
+# Copyright (c) 2019, Alliance for Open Media. All rights reserved.
 #
 # This source code is subject to the terms of the BSD 2 Clause License and the
 # Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License was
@@ -45,11 +45,9 @@ if(ANDROID_ABI MATCHES "^armeabi")
 endif()
 
 if(ANDROID_ABI MATCHES "^arm")
-  set(AS_EXECUTABLE as)
-  # No runtime cpu detect for arm targets.
-  set(CONFIG_RUNTIME_CPU_DETECT 0 CACHE STRING "")
+  set(CMAKE_ASM_COMPILER as)
 elseif(ANDROID_ABI MATCHES "^x86")
-  set(AS_EXECUTABLE yasm)
+  set(CMAKE_ASM_NASM_COMPILER yasm)
 endif()
 
 set(CMAKE_SYSTEM_NAME "Android")

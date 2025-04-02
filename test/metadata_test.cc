@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2019, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -9,13 +9,12 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "aom/aom_codec.h"
 #include "aom/aom_image.h"
 #include "aom/internal/aom_image_internal.h"
 #include "aom_scale/yv12config.h"
-#include "av1/encoder/bitstream.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
 #include "test/i420_video_source.h"
@@ -30,6 +29,7 @@ const uint8_t kMetadataPayloadT35[kMetadataPayloadSizeT35] = {
   0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17
 };
 
+#if !CONFIG_REALTIME_ONLY
 const size_t kMetadataPayloadSizeCll = 4;
 const uint8_t kMetadataPayloadCll[kMetadataPayloadSizeCll] = { 0xB5, 0x01, 0x02,
                                                                0x03 };
@@ -56,12 +56,12 @@ class MetadataEncodeTest
  protected:
   MetadataEncodeTest() : EncoderTest(GET_PARAM(0)) {}
 
-  virtual ~MetadataEncodeTest() {}
+  ~MetadataEncodeTest() override = default;
 
-  virtual void SetUp() { InitializeConfig(GET_PARAM(1)); }
+  void SetUp() override { InitializeConfig(GET_PARAM(1)); }
 
-  virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
-                                  ::libaom_test::Encoder * /*encoder*/) {
+  void PreEncodeFrameHook(::libaom_test::VideoSource *video,
+                          ::libaom_test::Encoder * /*encoder*/) override {
     aom_image_t *current_frame = video->img();
     if (current_frame) {
       if (current_frame->metadata) aom_img_remove_metadata(current_frame);
@@ -95,7 +95,7 @@ class MetadataEncodeTest
     }
   }
 
-  virtual void FramePktHook(const aom_codec_cx_pkt_t *pkt) {
+  void FramePktHook(const aom_codec_cx_pkt_t *pkt) override {
     if (pkt->kind == AOM_CODEC_CX_FRAME_PKT) {
       const size_t bitstream_size = pkt->data.frame.sz;
       const uint8_t *bitstream =
@@ -138,8 +138,8 @@ class MetadataEncodeTest
     }
   }
 
-  virtual void DecompressedFrameHook(const aom_image_t &img,
-                                     aom_codec_pts_t /*pts*/) {
+  void DecompressedFrameHook(const aom_image_t &img,
+                             aom_codec_pts_t /*pts*/) override {
     ASSERT_NE(img.metadata, nullptr);
 
     ASSERT_EQ(img.metadata->sz, 3u);
@@ -191,7 +191,7 @@ TEST_P(MetadataEncodeTest, TestMetadataEncoding) {
 
 AV1_INSTANTIATE_TEST_SUITE(MetadataEncodeTest,
                            ::testing::Values(::libaom_test::kOnePassGood));
-
+#endif  // !CONFIG_REALTIME_ONLY
 }  // namespace
 
 TEST(MetadataTest, MetadataAllocation) {

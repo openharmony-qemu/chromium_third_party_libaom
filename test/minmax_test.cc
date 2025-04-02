@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2023 The WebM project authors. All Rights Reserved.
- *  Copyright (c) 2023, Alliance for Open Media. All Rights Reserved.
+ * Copyright (c) 2023 The WebM project authors. All rights reserved.
+ * Copyright (c) 2023, Alliance for Open Media. All rights reserved.
  *
  *  This source code is subject to the terms of the BSD 2 Clause License and
  *  the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
@@ -31,7 +31,7 @@ typedef void (*MinMaxFunc)(const uint8_t *a, int a_stride, const uint8_t *b,
 
 class MinMaxTest : public ::testing::TestWithParam<MinMaxFunc> {
  public:
-  virtual void SetUp() {
+  void SetUp() override {
     mm_func_ = GetParam();
     rnd_.Reset(ACMRandom::DeterministicSeed());
   }
@@ -226,6 +226,10 @@ INSTANTIATE_TEST_SUITE_P(C, MinMaxTest, ::testing::Values(&aom_minmax_8x8_c));
 #if CONFIG_AV1_HIGHBITDEPTH
 INSTANTIATE_TEST_SUITE_P(C, HBDMinMaxTest,
                          ::testing::Values(&aom_highbd_minmax_8x8_c));
+#if HAVE_NEON
+INSTANTIATE_TEST_SUITE_P(NEON, HBDMinMaxTest,
+                         ::testing::Values(&aom_highbd_minmax_8x8_neon));
+#endif
 #endif
 
 #if HAVE_SSE2

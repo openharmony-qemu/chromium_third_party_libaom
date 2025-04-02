@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -30,7 +30,7 @@
 #define NB_EVEN 5
 #define NB_ODD 4
 
-static INLINE void calc_ab_fast_internal_common(
+static inline void calc_ab_fast_internal_common(
     uint32x4_t s0, uint32x4_t s1, uint32x4_t s2, uint32x4_t s3, uint32x4_t s4,
     uint32x4_t s5, uint32x4_t s6, uint32x4_t s7, int32x4_t sr4, int32x4_t sr5,
     int32x4_t sr6, int32x4_t sr7, uint32x4_t const_n_val, uint32x4_t s_vec,
@@ -115,7 +115,7 @@ static INLINE void calc_ab_fast_internal_common(
                 vreinterpretq_s32_u32(p1), vreinterpretq_s32_u32(p2),
                 vreinterpretq_s32_u32(p3));
 }
-static INLINE void calc_ab_internal_common(
+static inline void calc_ab_internal_common(
     uint32x4_t s0, uint32x4_t s1, uint32x4_t s2, uint32x4_t s3, uint32x4_t s4,
     uint32x4_t s5, uint32x4_t s6, uint32x4_t s7, uint16x8_t s16_0,
     uint16x8_t s16_1, uint16x8_t s16_2, uint16x8_t s16_3, uint16x8_t s16_4,
@@ -260,7 +260,7 @@ static INLINE void calc_ab_internal_common(
                 vreinterpretq_s32_u32(p7));
 }
 
-static INLINE void boxsum2_square_sum_calc(
+static inline void boxsum2_square_sum_calc(
     int16x4_t t1, int16x4_t t2, int16x4_t t3, int16x4_t t4, int16x4_t t5,
     int16x4_t t6, int16x4_t t7, int16x4_t t8, int16x4_t t9, int16x4_t t10,
     int16x4_t t11, int32x4_t *r0, int32x4_t *r1, int32x4_t *r2, int32x4_t *r3) {
@@ -294,7 +294,7 @@ static INLINE void boxsum2_square_sum_calc(
   *r3 = vaddq_s32(r789, r1011);
 }
 
-static INLINE void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
+static inline void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
                            int32_t *dst32, int32_t *dst2, const int dst_stride,
                            const int width, const int height) {
   assert(width > 2 * SGRPROJ_BORDER_HORZ);
@@ -418,16 +418,16 @@ static INLINE void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
       dst1_32_ptr += 2;
       dst2_ptr += 2;
       load_s16_4x4(src1_ptr, dst_stride_2, &s1, &s2, &s3, &s4);
-      transpose_s16_4x4d(&s1, &s2, &s3, &s4);
+      transpose_elems_inplace_s16_4x4(&s1, &s2, &s3, &s4);
       load_s32_4x4(src2_ptr, dst_stride_2, &d1, &d2, &d3, &d4);
-      transpose_s32_4x4(&d1, &d2, &d3, &d4);
+      transpose_elems_inplace_s32_4x4(&d1, &d2, &d3, &d4);
       do {
         src1_ptr += 4;
         src2_ptr += 4;
         load_s16_4x4(src1_ptr, dst_stride_2, &s5, &s6, &s7, &s8);
-        transpose_s16_4x4d(&s5, &s6, &s7, &s8);
+        transpose_elems_inplace_s16_4x4(&s5, &s6, &s7, &s8);
         load_s32_4x4(src2_ptr, dst_stride_2, &d5, &d6, &d7, &d8);
-        transpose_s32_4x4(&d5, &d6, &d7, &d8);
+        transpose_elems_inplace_s32_4x4(&d5, &d6, &d7, &d8);
         q23 = vaddl_s16(s2, s3);
         q45 = vaddl_s16(s4, s5);
         q67 = vaddl_s16(s6, s7);
@@ -438,7 +438,7 @@ static INLINE void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
         q34567 = vaddq_s32(q4567, vmovl_s16(s3));
         q45678 = vaddq_s32(q4567, vmovl_s16(s8));
 
-        transpose_s32_4x4(&q12345, &q23456, &q34567, &q45678);
+        transpose_elems_inplace_s32_4x4(&q12345, &q23456, &q34567, &q45678);
         store_s32_4x4(dst1_32_ptr, dst_stride_2, q12345, q23456, q34567,
                       q45678);
         dst1_32_ptr += 4;
@@ -457,7 +457,7 @@ static INLINE void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
         r34567 = vaddq_s32(r4567, d3);
         r45678 = vaddq_s32(r4567, d8);
 
-        transpose_s32_4x4(&r12345, &r23456, &r34567, &r45678);
+        transpose_elems_inplace_s32_4x4(&r12345, &r23456, &r34567, &r45678);
         store_s32_4x4(dst2_ptr, dst_stride_2, r12345, r23456, r34567, r45678);
         dst2_ptr += 4;
         d1 = d5;
@@ -472,7 +472,7 @@ static INLINE void boxsum2(int16_t *src, const int src_stride, int16_t *dst16,
   }
 }
 
-static INLINE void calc_ab_internal_lbd(int32_t *A, uint16_t *A16,
+static inline void calc_ab_internal_lbd(int32_t *A, uint16_t *A16,
                                         uint16_t *B16, int32_t *B,
                                         const int buf_stride, const int width,
                                         const int height, const int r,
@@ -525,7 +525,7 @@ static INLINE void calc_ab_internal_lbd(int32_t *A, uint16_t *A16,
 }
 
 #if CONFIG_AV1_HIGHBITDEPTH
-static INLINE void calc_ab_internal_hbd(int32_t *A, uint16_t *A16,
+static inline void calc_ab_internal_hbd(int32_t *A, uint16_t *A16,
                                         uint16_t *B16, int32_t *B,
                                         const int buf_stride, const int width,
                                         const int height, const int bit_depth,
@@ -591,7 +591,7 @@ static INLINE void calc_ab_internal_hbd(int32_t *A, uint16_t *A16,
 }
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
-static INLINE void calc_ab_fast_internal_lbd(int32_t *A, uint16_t *A16,
+static inline void calc_ab_fast_internal_lbd(int32_t *A, uint16_t *A16,
                                              int32_t *B, const int buf_stride,
                                              const int width, const int height,
                                              const int r, const int s,
@@ -644,7 +644,7 @@ static INLINE void calc_ab_fast_internal_lbd(int32_t *A, uint16_t *A16,
 }
 
 #if CONFIG_AV1_HIGHBITDEPTH
-static INLINE void calc_ab_fast_internal_hbd(int32_t *A, uint16_t *A16,
+static inline void calc_ab_fast_internal_hbd(int32_t *A, uint16_t *A16,
                                              int32_t *B, const int buf_stride,
                                              const int width, const int height,
                                              const int bit_depth, const int r,
@@ -699,7 +699,7 @@ static INLINE void calc_ab_fast_internal_hbd(int32_t *A, uint16_t *A16,
 }
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
-static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
+static inline void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
                            int32_t *dst2, const int dst_stride, const int width,
                            const int height) {
   assert(width > 2 * SGRPROJ_BORDER_HORZ);
@@ -844,9 +844,9 @@ static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
       w = width;
 
       load_s16_4x4((int16_t *)src1_ptr, dst_stride, &d1, &d2, &d3, &d4);
-      transpose_s16_4x4d(&d1, &d2, &d3, &d4);
+      transpose_elems_inplace_s16_4x4(&d1, &d2, &d3, &d4);
       load_s32_4x4(src2_ptr, dst_stride, &r1, &r2, &r3, &r4);
-      transpose_s32_4x4(&r1, &r2, &r3, &r4);
+      transpose_elems_inplace_s32_4x4(&r1, &r2, &r3, &r4);
       src1_ptr += 4;
       src2_ptr += 4;
 
@@ -861,9 +861,9 @@ static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
 
       do {
         load_s16_4x4((int16_t *)src1_ptr, dst_stride, &d5, &d6, &d7, &d8);
-        transpose_s16_4x4d(&d5, &d6, &d7, &d8);
+        transpose_elems_inplace_s16_4x4(&d5, &d6, &d7, &d8);
         load_s32_4x4(src2_ptr, dst_stride, &r5, &r6, &r7, &r8);
-        transpose_s32_4x4(&r5, &r6, &r7, &r8);
+        transpose_elems_inplace_s32_4x4(&r5, &r6, &r7, &r8);
         src1_ptr += 4;
         src2_ptr += 4;
 
@@ -873,7 +873,7 @@ static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
         q567 = vadd_s16(d7, q56);
         q78 = vadd_s16(d7, d8);
         q678 = vadd_s16(d6, q78);
-        transpose_s16_4x4d(&q234, &q345, &q456, &q567);
+        transpose_elems_inplace_s16_4x4(&q234, &q345, &q456, &q567);
         store_s16_4x4((int16_t *)dst1_ptr, dst_stride, q234, q345, q456, q567);
         dst1_ptr += 4;
 
@@ -887,7 +887,7 @@ static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
         r567 = vaddq_s32(r7, r56);
         r78 = vaddq_s32(r7, r8);
         r678 = vaddq_s32(r6, r78);
-        transpose_s32_4x4(&r234, &r345, &r456, &r567);
+        transpose_elems_inplace_s32_4x4(&r234, &r345, &r456, &r567);
         store_s32_4x4(dst2_ptr, dst_stride, r234, r345, r456, r567);
         dst2_ptr += 4;
 
@@ -902,7 +902,7 @@ static INLINE void boxsum1(int16_t *src, const int src_stride, uint16_t *dst1,
   }
 }
 
-static INLINE int32x4_t cross_sum_inp_s32(int32_t *buf, int buf_stride) {
+static inline int32x4_t cross_sum_inp_s32(int32_t *buf, int buf_stride) {
   int32x4_t xtr, xt, xtl, xl, x, xr, xbr, xb, xbl;
   int32x4_t fours, threes, res;
 
@@ -922,7 +922,7 @@ static INLINE int32x4_t cross_sum_inp_s32(int32_t *buf, int buf_stride) {
   return res;
 }
 
-static INLINE void cross_sum_inp_u16(uint16_t *buf, int buf_stride,
+static inline void cross_sum_inp_u16(uint16_t *buf, int buf_stride,
                                      int32x4_t *a0, int32x4_t *a1) {
   uint16x8_t xtr, xt, xtl, xl, x, xr, xbr, xb, xbl;
   uint16x8_t r0, r1;
@@ -957,7 +957,7 @@ static INLINE void cross_sum_inp_u16(uint16_t *buf, int buf_stride,
       vaddq_u32(vmovl_u16(vget_high_u16(r0)), vmovl_u16(vget_high_u16(r1))));
 }
 
-static INLINE int32x4_t cross_sum_fast_even_row(int32_t *buf, int buf_stride) {
+static inline int32x4_t cross_sum_fast_even_row(int32_t *buf, int buf_stride) {
   int32x4_t xtr, xt, xtl, xbr, xb, xbl;
   int32x4_t fives, sixes, fives_plus_sixes;
 
@@ -976,7 +976,7 @@ static INLINE int32x4_t cross_sum_fast_even_row(int32_t *buf, int buf_stride) {
       vaddq_s32(vshlq_n_s32(fives_plus_sixes, 2), fives_plus_sixes), sixes);
 }
 
-static INLINE void cross_sum_fast_even_row_inp16(uint16_t *buf, int buf_stride,
+static inline void cross_sum_fast_even_row_inp16(uint16_t *buf, int buf_stride,
                                                  int32x4_t *a0, int32x4_t *a1) {
   uint16x8_t xtr, xt, xtl, xbr, xb, xbl, xb0;
 
@@ -1004,7 +1004,7 @@ static INLINE void cross_sum_fast_even_row_inp16(uint16_t *buf, int buf_stride,
       vaddq_u32(vmovl_u16(vget_high_u16(xbr)), vmovl_u16(vget_high_u16(xb))));
 }
 
-static INLINE int32x4_t cross_sum_fast_odd_row(int32_t *buf) {
+static inline int32x4_t cross_sum_fast_odd_row(int32_t *buf) {
   int32x4_t xl, x, xr;
   int32x4_t fives, sixes, fives_plus_sixes;
 
@@ -1019,7 +1019,7 @@ static INLINE int32x4_t cross_sum_fast_odd_row(int32_t *buf) {
       vaddq_s32(vshlq_n_s32(fives_plus_sixes, 2), fives_plus_sixes), sixes);
 }
 
-static INLINE void cross_sum_fast_odd_row_inp16(uint16_t *buf, int32x4_t *a0,
+static inline void cross_sum_fast_odd_row_inp16(uint16_t *buf, int32x4_t *a0,
                                                 int32x4_t *a1) {
   uint16x8_t xl, x, xr;
   uint16x8_t x0;
@@ -1124,10 +1124,10 @@ static void final_filter_fast_internal(uint16_t *A, int32_t *B,
   } while (h > 0);
 }
 
-void final_filter_internal(uint16_t *A, int32_t *B, const int buf_stride,
-                           int16_t *src, const int src_stride, int32_t *dst,
-                           const int dst_stride, const int width,
-                           const int height) {
+static void final_filter_internal(uint16_t *A, int32_t *B, const int buf_stride,
+                                  int16_t *src, const int src_stride,
+                                  int32_t *dst, const int dst_stride,
+                                  const int width, const int height) {
   int16x8_t s0;
   int32_t *B_tmp, *dst_ptr;
   uint16_t *A_tmp;
@@ -1174,23 +1174,27 @@ void final_filter_internal(uint16_t *A, int32_t *B, const int buf_stride,
   } while (h > 0);
 }
 
-static INLINE void restoration_fast_internal(uint16_t *dgd16, int width,
-                                             int height, int dgd_stride,
-                                             int32_t *dst, int dst_stride,
-                                             int bit_depth, int sgr_params_idx,
-                                             int radius_idx) {
+static inline int restoration_fast_internal(uint16_t *dgd16, int width,
+                                            int height, int dgd_stride,
+                                            int32_t *dst, int dst_stride,
+                                            int bit_depth, int sgr_params_idx,
+                                            int radius_idx) {
   const sgr_params_type *const params = &av1_sgr_params[sgr_params_idx];
   const int r = params->r[radius_idx];
   const int width_ext = width + 2 * SGRPROJ_BORDER_HORZ;
   const int height_ext = height + 2 * SGRPROJ_BORDER_VERT;
-
   const int buf_stride = ((width_ext + 3) & ~3) + 16;
-  int32_t A_[RESTORATION_PROC_UNIT_PELS];
-  uint16_t A16_[RESTORATION_PROC_UNIT_PELS];
-  int32_t B_[RESTORATION_PROC_UNIT_PELS];
-  int32_t *square_sum_buf = A_;
-  int32_t *sum_buf = B_;
-  uint16_t *tmp16_buf = A16_;
+
+  const size_t buf_size = 3 * sizeof(int32_t) * RESTORATION_PROC_UNIT_PELS;
+  int32_t *buf = aom_memalign(8, buf_size);
+  if (!buf) return -1;
+
+  int32_t *square_sum_buf = buf;
+  int32_t *sum_buf = square_sum_buf + RESTORATION_PROC_UNIT_PELS;
+  uint16_t *tmp16_buf = (uint16_t *)(sum_buf + RESTORATION_PROC_UNIT_PELS);
+  assert((char *)(sum_buf + RESTORATION_PROC_UNIT_PELS) <=
+             (char *)buf + buf_size &&
+         "Allocated buffer is too small. Resize the buffer.");
 
   assert(r <= MAX_RADIUS && "Need MAX_RADIUS >= r");
   assert(r <= SGRPROJ_BORDER_VERT - 1 && r <= SGRPROJ_BORDER_HORZ - 1 &&
@@ -1236,26 +1240,32 @@ static INLINE void restoration_fast_internal(uint16_t *dgd16, int width,
 #endif
   final_filter_fast_internal(tmp16_buf, sum_buf, buf_stride, (int16_t *)dgd16,
                              dgd_stride, dst, dst_stride, width, height);
+  aom_free(buf);
+  return 0;
 }
 
-static INLINE void restoration_internal(uint16_t *dgd16, int width, int height,
-                                        int dgd_stride, int32_t *dst,
-                                        int dst_stride, int bit_depth,
-                                        int sgr_params_idx, int radius_idx) {
+static inline int restoration_internal(uint16_t *dgd16, int width, int height,
+                                       int dgd_stride, int32_t *dst,
+                                       int dst_stride, int bit_depth,
+                                       int sgr_params_idx, int radius_idx) {
   const sgr_params_type *const params = &av1_sgr_params[sgr_params_idx];
   const int r = params->r[radius_idx];
   const int width_ext = width + 2 * SGRPROJ_BORDER_HORZ;
   const int height_ext = height + 2 * SGRPROJ_BORDER_VERT;
+  const int buf_stride = ((width_ext + 3) & ~3) + 16;
 
-  int buf_stride = ((width_ext + 3) & ~3) + 16;
-  int32_t A_[RESTORATION_PROC_UNIT_PELS];
-  uint16_t A16_[RESTORATION_PROC_UNIT_PELS];
-  uint16_t B16_[RESTORATION_PROC_UNIT_PELS];
-  int32_t B_[RESTORATION_PROC_UNIT_PELS];
-  int32_t *square_sum_buf = A_;
-  uint16_t *sum_buf = B16_;
-  uint16_t *A16 = A16_;
-  int32_t *B = B_;
+  const size_t buf_size = 3 * sizeof(int32_t) * RESTORATION_PROC_UNIT_PELS;
+  int32_t *buf = aom_memalign(8, buf_size);
+  if (!buf) return -1;
+
+  int32_t *square_sum_buf = buf;
+  int32_t *B = square_sum_buf + RESTORATION_PROC_UNIT_PELS;
+  uint16_t *A16 = (uint16_t *)(B + RESTORATION_PROC_UNIT_PELS);
+  uint16_t *sum_buf = A16 + RESTORATION_PROC_UNIT_PELS;
+
+  assert((char *)(sum_buf + RESTORATION_PROC_UNIT_PELS) <=
+             (char *)buf + buf_size &&
+         "Allocated buffer is too small. Resize the buffer.");
 
   assert(r <= MAX_RADIUS && "Need MAX_RADIUS >= r");
   assert(r <= SGRPROJ_BORDER_VERT - 1 && r <= SGRPROJ_BORDER_HORZ - 1 &&
@@ -1300,9 +1310,11 @@ static INLINE void restoration_internal(uint16_t *dgd16, int width, int height,
 #endif
   final_filter_internal(A16, B, buf_stride, (int16_t *)dgd16, dgd_stride, dst,
                         dst_stride, width, height);
+  aom_free(buf);
+  return 0;
 }
 
-static INLINE void src_convert_u8_to_u16(const uint8_t *src,
+static inline void src_convert_u8_to_u16(const uint8_t *src,
                                          const int src_stride, uint16_t *dst,
                                          const int dst_stride, const int width,
                                          const int height) {
@@ -1357,7 +1369,7 @@ static INLINE void src_convert_u8_to_u16(const uint8_t *src,
 }
 
 #if CONFIG_AV1_HIGHBITDEPTH
-static INLINE void src_convert_hbd_copy(const uint16_t *src, int src_stride,
+static inline void src_convert_hbd_copy(const uint16_t *src, int src_stride,
                                         uint16_t *dst, const int dst_stride,
                                         int width, int height) {
   const uint16_t *src_ptr;
@@ -1440,20 +1452,25 @@ int av1_selfguided_restoration_neon(const uint8_t *dat8, int width, int height,
       dgd16_stride, width_ext, height_ext);
 #endif
 
-  if (params->r[0] > 0)
-    restoration_fast_internal(dgd16, width, height, dgd16_stride, flt0,
-                              flt_stride, bit_depth, sgr_params_idx, 0);
-  if (params->r[1] > 0)
-    restoration_internal(dgd16, width, height, dgd16_stride, flt1, flt_stride,
-                         bit_depth, sgr_params_idx, 1);
+  if (params->r[0] > 0) {
+    int ret =
+        restoration_fast_internal(dgd16, width, height, dgd16_stride, flt0,
+                                  flt_stride, bit_depth, sgr_params_idx, 0);
+    if (ret != 0) return ret;
+  }
+  if (params->r[1] > 0) {
+    int ret = restoration_internal(dgd16, width, height, dgd16_stride, flt1,
+                                   flt_stride, bit_depth, sgr_params_idx, 1);
+    if (ret != 0) return ret;
+  }
   return 0;
 }
 
-void av1_apply_selfguided_restoration_neon(const uint8_t *dat8, int width,
-                                           int height, int stride, int eps,
-                                           const int *xqd, uint8_t *dst8,
-                                           int dst_stride, int32_t *tmpbuf,
-                                           int bit_depth, int highbd) {
+int av1_apply_selfguided_restoration_neon(const uint8_t *dat8, int width,
+                                          int height, int stride, int eps,
+                                          const int *xqd, uint8_t *dst8,
+                                          int dst_stride, int32_t *tmpbuf,
+                                          int bit_depth, int highbd) {
   int32_t *flt0 = tmpbuf;
   int32_t *flt1 = flt0 + RESTORATION_UNITPELS_MAX;
   assert(width * height <= RESTORATION_UNITPELS_MAX);
@@ -1491,12 +1508,16 @@ void av1_apply_selfguided_restoration_neon(const uint8_t *dat8, int width,
       dgd16 - SGRPROJ_BORDER_VERT * dgd16_stride - SGRPROJ_BORDER_HORZ,
       dgd16_stride, width_ext, height_ext);
 #endif
-  if (params->r[0] > 0)
-    restoration_fast_internal(dgd16, width, height, dgd16_stride, flt0, width,
-                              bit_depth, eps, 0);
-  if (params->r[1] > 0)
-    restoration_internal(dgd16, width, height, dgd16_stride, flt1, width,
-                         bit_depth, eps, 1);
+  if (params->r[0] > 0) {
+    int ret = restoration_fast_internal(dgd16, width, height, dgd16_stride,
+                                        flt0, width, bit_depth, eps, 0);
+    if (ret != 0) return ret;
+  }
+  if (params->r[1] > 0) {
+    int ret = restoration_internal(dgd16, width, height, dgd16_stride, flt1,
+                                   width, bit_depth, eps, 1);
+    if (ret != 0) return ret;
+  }
 
   av1_decode_xq(xqd, xq, params);
 
@@ -1591,4 +1612,5 @@ void av1_apply_selfguided_restoration_neon(const uint8_t *dat8, int width,
       h--;
     } while (h > 0);
   }
+  return 0;
 }

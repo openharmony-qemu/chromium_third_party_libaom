@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -19,9 +19,9 @@
 #include "aom_mem/aom_mem.h"
 #include "aom_ports/aom_timer.h"
 #include "aom_ports/mem.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/util.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 namespace AV1CompRoundShift {
 
@@ -39,10 +39,11 @@ typedef std::tuple<comp_round_shift_array_func, BLOCK_SIZE, int>
 class AV1CompRoundShiftTest
     : public ::testing::TestWithParam<CompRoundShiftParam> {
  public:
-  ~AV1CompRoundShiftTest();
+  ~AV1CompRoundShiftTest() override;
 
-  void SetUp() { rnd_.Reset(libaom_test::ACMRandom::DeterministicSeed()); }
-  void TearDown() {}
+  void SetUp() override {
+    rnd_.Reset(libaom_test::ACMRandom::DeterministicSeed());
+  }
 
  protected:
   void RunCheckOutput(comp_round_shift_array_func test_impl, BLOCK_SIZE bsize,
@@ -54,7 +55,7 @@ class AV1CompRoundShiftTest
 };
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AV1CompRoundShiftTest);
 
-AV1CompRoundShiftTest::~AV1CompRoundShiftTest() {}
+AV1CompRoundShiftTest::~AV1CompRoundShiftTest() = default;
 
 void AV1CompRoundShiftTest::RunCheckOutput(
     comp_round_shift_array_func test_impl, BLOCK_SIZE bsize, int bit) {

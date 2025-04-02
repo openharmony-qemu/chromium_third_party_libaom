@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -17,7 +17,7 @@
 #include "config/av1_rtcd.h"
 #include "config/aom_dsp_rtcd.h"
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/util.h"
 #include "test/register_state_check.h"
@@ -50,10 +50,8 @@ typedef std::tuple<WarpTestParam, int, int, int, int> WarpTestParams;
 
 class AV1WarpFilterTest : public ::testing::TestWithParam<WarpTestParams> {
  public:
-  virtual ~AV1WarpFilterTest();
-  virtual void SetUp();
-
-  virtual void TearDown();
+  ~AV1WarpFilterTest() override;
+  void SetUp() override;
 
  protected:
   void RunCheckOutput(warp_affine_func test_impl);
@@ -86,10 +84,8 @@ typedef std::tuple<HighbdWarpTestParam, int, int, int, int>
 class AV1HighbdWarpFilterTest
     : public ::testing::TestWithParam<HighbdWarpTestParams> {
  public:
-  virtual ~AV1HighbdWarpFilterTest();
-  virtual void SetUp();
-
-  virtual void TearDown();
+  ~AV1HighbdWarpFilterTest() override;
+  void SetUp() override;
 
  protected:
   void RunCheckOutput(highbd_warp_affine_func test_impl);

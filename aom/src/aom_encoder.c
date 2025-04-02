@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -23,6 +23,7 @@
 #endif
 
 #include <limits.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "aom/aom_encoder.h"
@@ -67,7 +68,11 @@ aom_codec_err_t aom_codec_enc_init_ver(aom_codec_ctx_t *ctx,
     res = AOM_CODEC_INCAPABLE;
   else if ((flags & AOM_CODEC_USE_PSNR) && !(iface->caps & AOM_CODEC_CAP_PSNR))
     res = AOM_CODEC_INCAPABLE;
-  else if (cfg->g_bit_depth > 8 && (flags & AOM_CODEC_USE_HIGHBITDEPTH) == 0) {
+  else if ((flags & AOM_CODEC_USE_HIGHBITDEPTH) &&
+           !(iface->caps & AOM_CODEC_CAP_HIGHBITDEPTH)) {
+    res = AOM_CODEC_INCAPABLE;
+  } else if (cfg->g_bit_depth > 8 &&
+             (flags & AOM_CODEC_USE_HIGHBITDEPTH) == 0) {
     res = AOM_CODEC_INVALID_PARAM;
     ctx->err_detail =
         "High bit-depth used without the AOM_CODEC_USE_HIGHBITDEPTH flag.";
@@ -121,7 +126,7 @@ aom_codec_err_t aom_codec_enc_config_default(aom_codec_iface_t *iface,
   return res;
 }
 
-#if ARCH_X86 || ARCH_X86_64
+#if AOM_ARCH_X86 || AOM_ARCH_X86_64
 /* On X86, disable the x87 unit's internal 80 bit precision for better
  * consistency with the SSE unit's 64 bit precision.
  */
@@ -132,7 +137,7 @@ aom_codec_err_t aom_codec_enc_config_default(aom_codec_iface_t *iface,
 #else
 #define FLOATING_POINT_SET_PRECISION
 #define FLOATING_POINT_RESTORE_PRECISION
-#endif  // ARCH_X86 || ARCH_X86_64
+#endif  // AOM_ARCH_X86 || AOM_ARCH_X86_64
 
 #if HAVE_FEXCEPT && CONFIG_DEBUG
 #define FLOATING_POINT_SET_EXCEPTIONS \
@@ -171,7 +176,14 @@ aom_codec_err_t aom_codec_encode(aom_codec_ctx_t *ctx, const aom_image_t *img,
     res = AOM_CODEC_ERROR;
   else if (!(ctx->iface->caps & AOM_CODEC_CAP_ENCODER))
     res = AOM_CODEC_INCAPABLE;
-  else {
+  else if (img && ((img->fmt & AOM_IMG_FMT_HIGHBITDEPTH) != 0) !=
+                      ((ctx->init_flags & AOM_CODEC_USE_HIGHBITDEPTH) != 0)) {
+    res = AOM_CODEC_INVALID_PARAM;
+#if ULONG_MAX > UINT32_MAX
+  } else if (duration > UINT32_MAX) {
+    res = AOM_CODEC_INVALID_PARAM;
+#endif
+  } else {
     /* Execute in a normalized floating point environment, if the platform
      * requires it.
      */

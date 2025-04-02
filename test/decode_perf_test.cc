@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -12,8 +12,7 @@
 #include <string>
 #include <tuple>
 
-#include "config/aom_version.h"
-
+#include "aom/aom_codec.h"
 #include "aom_ports/aom_timer.h"
 #include "common/ivfenc.h"
 #include "test/codec_factory.h"
@@ -82,7 +81,7 @@ TEST_P(DecodePerfTest, PerfTest) {
 
   printf("{\n");
   printf("\t\"type\" : \"decode_perf_test\",\n");
-  printf("\t\"version\" : \"%s\",\n", VERSION_STRING_NOSP);
+  printf("\t\"version\" : \"%s\",\n", aom_codec_version_str());
   printf("\t\"videoName\" : \"%s\",\n", video_name);
   printf("\t\"threadCount\" : %u,\n", threads);
   printf("\t\"decodeTimeSecs\" : %f,\n", elapsed_secs);
@@ -101,13 +100,12 @@ class AV1NewEncodeDecodePerfTest
  protected:
   AV1NewEncodeDecodePerfTest()
       : EncoderTest(GET_PARAM(0)), encoding_mode_(GET_PARAM(1)), speed_(0),
-        outfile_(0), out_frames_(0) {}
+        outfile_(nullptr), out_frames_(0) {}
 
-  virtual ~AV1NewEncodeDecodePerfTest() {}
+  ~AV1NewEncodeDecodePerfTest() override = default;
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(encoding_mode_);
+  void SetUp() override {
+    InitializeConfig(encoding_mode_);
 
     cfg_.g_lag_in_frames = 25;
     cfg_.rc_min_quantizer = 2;
@@ -121,8 +119,8 @@ class AV1NewEncodeDecodePerfTest
     cfg_.rc_end_usage = AOM_VBR;
   }
 
-  virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
-                                  ::libaom_test::Encoder *encoder) {
+  void PreEncodeFrameHook(::libaom_test::VideoSource *video,
+                          ::libaom_test::Encoder *encoder) override {
     if (video->frame() == 0) {
       encoder->Control(AOME_SET_CPUUSED, speed_);
       encoder->Control(AV1E_SET_FRAME_PARALLEL_DECODING, 1);
@@ -130,7 +128,7 @@ class AV1NewEncodeDecodePerfTest
     }
   }
 
-  virtual void BeginPassHook(unsigned int /*pass*/) {
+  void BeginPassHook(unsigned int /*pass*/) override {
     const char *const env = getenv("LIBAOM_TEST_DATA_PATH");
     const std::string data_path(env ? env : ".");
     const std::string path_to_source = data_path + "/" + kNewEncodeOutputFile;
@@ -138,7 +136,7 @@ class AV1NewEncodeDecodePerfTest
     ASSERT_NE(outfile_, nullptr);
   }
 
-  virtual void EndPassHook() {
+  void EndPassHook() override {
     if (outfile_ != nullptr) {
       if (!fseek(outfile_, 0, SEEK_SET))
         ivf_write_file_header(outfile_, &cfg_, AV1_FOURCC, out_frames_);
@@ -147,7 +145,7 @@ class AV1NewEncodeDecodePerfTest
     }
   }
 
-  virtual void FramePktHook(const aom_codec_cx_pkt_t *pkt) {
+  void FramePktHook(const aom_codec_cx_pkt_t *pkt) override {
     ++out_frames_;
 
     // Write initial file header if first frame.
@@ -160,7 +158,7 @@ class AV1NewEncodeDecodePerfTest
               pkt->data.frame.sz);
   }
 
-  virtual bool DoDecode() const { return false; }
+  bool DoDecode() const override { return false; }
 
   void set_speed(unsigned int speed) { speed_ = speed; }
 
@@ -233,7 +231,7 @@ TEST_P(AV1NewEncodeDecodePerfTest, PerfTest) {
 
   printf("{\n");
   printf("\t\"type\" : \"decode_perf_test\",\n");
-  printf("\t\"version\" : \"%s\",\n", VERSION_STRING_NOSP);
+  printf("\t\"version\" : \"%s\",\n", aom_codec_version_str());
   printf("\t\"videoName\" : \"%s\",\n", kNewEncodeOutputFile);
   printf("\t\"threadCount\" : %u,\n", threads);
   printf("\t\"decodeTimeSecs\" : %f,\n", elapsed_secs);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -118,7 +118,7 @@ static const arg_def_t *all_args[] = {
 
 #if CONFIG_LIBYUV
 // Returns 0 on success and returns -1 on failure.
-static INLINE int libyuv_scale(const aom_image_t *src, aom_image_t *dst,
+static inline int libyuv_scale(const aom_image_t *src, aom_image_t *dst,
                                FilterModeEnum mode) {
   if (src->fmt != dst->fmt) {
     fprintf(stderr,
@@ -381,7 +381,7 @@ static void generate_filename(const char *pattern, char *out, size_t q_len,
         case '7': snprintf(q, q_len - 1, "%07d", frame_in); break;
         case '8': snprintf(q, q_len - 1, "%08d", frame_in); break;
         case '9': snprintf(q, q_len - 1, "%09d", frame_in); break;
-        default: die("Unrecognized pattern %%%c\n", p[1]); break;
+        default: die("Unrecognized pattern %%%c\n", p[1]);
       }
 
       pat_len = strlen(q);
@@ -834,6 +834,8 @@ static int main_loop(int argc, const char **argv_) {
     dx_time += aom_usec_timer_elapsed(&timer);
 
     got_data = 0;
+    // TODO(aomedia:3519): Change the prototype of aom_codec_get_frame_fn_t to
+    // facilitate error handling.
     while ((img = aom_codec_get_frame(&decoder, &iter))) {
       ++frame_out;
       got_data = 1;
