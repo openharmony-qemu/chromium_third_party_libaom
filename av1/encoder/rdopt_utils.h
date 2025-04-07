@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2019, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 #define MAX_REF_MV_SEARCH 3
+#define MAX_TX_RD_GATE_LEVEL 5
 #define INTER_INTRA_RD_THRESH_SCALE 9
 #define INTER_INTRA_RD_THRESH_SHIFT 4
 
@@ -238,17 +239,16 @@ static const int winner_mode_count_allowed[MULTI_WINNER_MODE_LEVELS] = {
   3   // MULTI_WINNER_MODE_DEFAULT
 };
 
-static AOM_INLINE void restore_dst_buf(MACROBLOCKD *xd, const BUFFER_SET dst,
-                                       const int num_planes) {
+static inline void restore_dst_buf(MACROBLOCKD *xd, const BUFFER_SET dst,
+                                   const int num_planes) {
   for (int i = 0; i < num_planes; i++) {
     xd->plane[i].dst.buf = dst.plane[i];
     xd->plane[i].dst.stride = dst.stride[i];
   }
 }
 
-static AOM_INLINE void swap_dst_buf(MACROBLOCKD *xd,
-                                    const BUFFER_SET *dst_bufs[2],
-                                    int num_planes) {
+static inline void swap_dst_buf(MACROBLOCKD *xd, const BUFFER_SET *dst_bufs[2],
+                                int num_planes) {
   const BUFFER_SET *buf0 = dst_bufs[0];
   dst_bufs[0] = dst_bufs[1];
   dst_bufs[1] = buf0;
@@ -257,9 +257,9 @@ static AOM_INLINE void swap_dst_buf(MACROBLOCKD *xd,
 
 /* clang-format on */
 // Calculate rd threshold based on ref best rd and relevant scaling factors
-static AOM_INLINE int64_t get_rd_thresh_from_best_rd(int64_t ref_best_rd,
-                                                     int mul_factor,
-                                                     int div_factor) {
+static inline int64_t get_rd_thresh_from_best_rd(int64_t ref_best_rd,
+                                                 int mul_factor,
+                                                 int div_factor) {
   int64_t rd_thresh = ref_best_rd;
   if (div_factor != 0) {
     rd_thresh = ref_best_rd < (div_factor * (INT64_MAX / mul_factor))
@@ -269,9 +269,9 @@ static AOM_INLINE int64_t get_rd_thresh_from_best_rd(int64_t ref_best_rd,
   return rd_thresh;
 }
 
-static AOM_INLINE THR_MODES
-get_prediction_mode_idx(PREDICTION_MODE this_mode, MV_REFERENCE_FRAME ref_frame,
-                        MV_REFERENCE_FRAME second_ref_frame) {
+static inline THR_MODES get_prediction_mode_idx(
+    PREDICTION_MODE this_mode, MV_REFERENCE_FRAME ref_frame,
+    MV_REFERENCE_FRAME second_ref_frame) {
   if (this_mode < INTRA_MODE_END) {
     assert(ref_frame == INTRA_FRAME);
     assert(second_ref_frame == NONE_FRAME);
@@ -295,7 +295,7 @@ get_prediction_mode_idx(PREDICTION_MODE this_mode, MV_REFERENCE_FRAME ref_frame,
   return THR_INVALID;
 }
 
-static AOM_INLINE int inter_mode_data_block_idx(BLOCK_SIZE bsize) {
+static inline int inter_mode_data_block_idx(BLOCK_SIZE bsize) {
   if (bsize == BLOCK_4X4 || bsize == BLOCK_4X8 || bsize == BLOCK_8X4 ||
       bsize == BLOCK_4X16 || bsize == BLOCK_16X4) {
     return -1;
@@ -304,12 +304,11 @@ static AOM_INLINE int inter_mode_data_block_idx(BLOCK_SIZE bsize) {
 }
 
 // Get transform block visible dimensions cropped to the MI units.
-static AOM_INLINE void get_txb_dimensions(const MACROBLOCKD *xd, int plane,
-                                          BLOCK_SIZE plane_bsize, int blk_row,
-                                          int blk_col, BLOCK_SIZE tx_bsize,
-                                          int *width, int *height,
-                                          int *visible_width,
-                                          int *visible_height) {
+static inline void get_txb_dimensions(const MACROBLOCKD *xd, int plane,
+                                      BLOCK_SIZE plane_bsize, int blk_row,
+                                      int blk_col, BLOCK_SIZE tx_bsize,
+                                      int *width, int *height,
+                                      int *visible_width, int *visible_height) {
   assert(tx_bsize <= plane_bsize);
   const int txb_height = block_size_high[tx_bsize];
   const int txb_width = block_size_wide[tx_bsize];
@@ -340,22 +339,24 @@ static AOM_INLINE void get_txb_dimensions(const MACROBLOCKD *xd, int plane,
   if (width) *width = txb_width;
 }
 
-static AOM_INLINE int bsize_to_num_blk(BLOCK_SIZE bsize) {
+static inline int bsize_to_num_blk(BLOCK_SIZE bsize) {
   int num_blk = 1 << (num_pels_log2_lookup[bsize] - 2 * MI_SIZE_LOG2);
   return num_blk;
 }
 
-static INLINE int check_txfm_eval(MACROBLOCK *const x, BLOCK_SIZE bsize,
+static inline int check_txfm_eval(MACROBLOCK *const x, BLOCK_SIZE bsize,
                                   int64_t best_skip_rd, int64_t skip_rd,
                                   int level, int is_luma_only) {
   int eval_txfm = 1;
   // Derive aggressiveness factor for gating the transform search
   // Lower value indicates more aggressiveness. Be more conservative (high
   // value) for (i) low quantizers (ii) regions where prediction is poor
-  const int scale[5] = { INT_MAX, 4, 3, 2, 2 };
+  const int scale[MAX_TX_RD_GATE_LEVEL + 1] = { INT_MAX, 4, 3, 2, 2, 1 };
   const int qslope = 2 * (!is_luma_only);
-  const int level_to_qindex_map[5] = { 0, 0, 0, 80, 100 };
+  const int level_to_qindex_map[MAX_TX_RD_GATE_LEVEL + 1] = { 0,  0,   0,
+                                                              80, 100, 140 };
   int aggr_factor = 4;
+  assert(level <= MAX_TX_RD_GATE_LEVEL);
   const int pred_qindex_thresh = level_to_qindex_map[level];
   if (!is_luma_only && level <= 2) {
     aggr_factor = 4 * AOMMAX(1, ROUND_POWER_OF_TWO((MAXQ - x->qindex) * qslope,
@@ -374,7 +375,9 @@ static INLINE int check_txfm_eval(MACROBLOCK *const x, BLOCK_SIZE bsize,
   // since best_skip_rd is computed after and skip_rd is computed (with 8-bit
   // prediction signals blended for WEDGE/DIFFWTD rather than 16-bit) before
   // interpolation filter search
-  const int luma_mul[5] = { INT_MAX, 32, 29, 17, 17 };
+  const int luma_mul[MAX_TX_RD_GATE_LEVEL + 1] = {
+    INT_MAX, 32, 29, 17, 17, 17
+  };
   int mul_factor = is_luma_only ? luma_mul[level] : 16;
   int64_t rd_thresh =
       (best_skip_rd == INT64_MAX)
@@ -397,7 +400,7 @@ static TX_MODE select_tx_mode(
 }
 
 // Checks the conditions to disable winner mode processing
-static INLINE int bypass_winner_mode_processing(const MACROBLOCK *const x,
+static inline int bypass_winner_mode_processing(const MACROBLOCK *const x,
                                                 const SPEED_FEATURES *sf,
                                                 int use_txfm_skip,
                                                 int actual_txfm_skip,
@@ -438,7 +441,7 @@ static INLINE int bypass_winner_mode_processing(const MACROBLOCK *const x,
 }
 
 // Checks the conditions to enable winner mode processing
-static INLINE int is_winner_mode_processing_enabled(const struct AV1_COMP *cpi,
+static inline int is_winner_mode_processing_enabled(const struct AV1_COMP *cpi,
                                                     const MACROBLOCK *const x,
                                                     MB_MODE_INFO *const mbmi,
                                                     int actual_txfm_skip) {
@@ -472,7 +475,7 @@ static INLINE int is_winner_mode_processing_enabled(const struct AV1_COMP *cpi,
   return 0;
 }
 
-static INLINE void set_tx_size_search_method(
+static inline void set_tx_size_search_method(
     const AV1_COMMON *cm, const WinnerModeParams *winner_mode_params,
     TxfmSearchParams *txfm_params, int enable_winner_mode_for_tx_size_srch,
     int is_winner_mode) {
@@ -491,7 +494,7 @@ static INLINE void set_tx_size_search_method(
       select_tx_mode(cm, txfm_params->tx_size_search_method);
 }
 
-static INLINE void set_tx_type_prune(const SPEED_FEATURES *sf,
+static inline void set_tx_type_prune(const SPEED_FEATURES *sf,
                                      TxfmSearchParams *txfm_params,
                                      int winner_mode_tx_type_pruning,
                                      int is_winner_mode) {
@@ -507,7 +510,7 @@ static INLINE void set_tx_type_prune(const SPEED_FEATURES *sf,
       prune_mode[winner_mode_tx_type_pruning - 1][is_winner_mode];
 }
 
-static INLINE void set_tx_domain_dist_params(
+static inline void set_tx_domain_dist_params(
     const WinnerModeParams *winner_mode_params, TxfmSearchParams *txfm_params,
     int enable_winner_mode_for_tx_domain_dist, int is_winner_mode) {
   if (txfm_params->use_qm_dist_metric) {
@@ -540,7 +543,7 @@ static INLINE void set_tx_domain_dist_params(
 }
 
 // This function sets mode parameters for different mode evaluation stages
-static INLINE void set_mode_eval_params(const struct AV1_COMP *cpi,
+static inline void set_mode_eval_params(const struct AV1_COMP *cpi,
                                         MACROBLOCK *x,
                                         MODE_EVAL_TYPE mode_eval_type) {
   const AV1_COMMON *cm = &cpi->common;
@@ -643,7 +646,7 @@ static INLINE void set_mode_eval_params(const struct AV1_COMP *cpi,
 
 // Similar to store_cfl_required(), but for use during the RDO process,
 // where we haven't yet determined whether this block uses CfL.
-static INLINE CFL_ALLOWED_TYPE store_cfl_required_rdo(const AV1_COMMON *cm,
+static inline CFL_ALLOWED_TYPE store_cfl_required_rdo(const AV1_COMMON *cm,
                                                       const MACROBLOCK *x) {
   const MACROBLOCKD *xd = &x->e_mbd;
 
@@ -663,13 +666,13 @@ static INLINE CFL_ALLOWED_TYPE store_cfl_required_rdo(const AV1_COMMON *cm,
   return is_cfl_allowed(xd);
 }
 
-static AOM_INLINE void init_sbuv_mode(MB_MODE_INFO *const mbmi) {
+static inline void init_sbuv_mode(MB_MODE_INFO *const mbmi) {
   mbmi->uv_mode = UV_DC_PRED;
   mbmi->palette_mode_info.palette_size[1] = 0;
 }
 
 // Store best mode stats for winner mode processing
-static INLINE void store_winner_mode_stats(
+static inline void store_winner_mode_stats(
     const AV1_COMMON *const cm, MACROBLOCK *x, const MB_MODE_INFO *mbmi,
     RD_STATS *rd_cost, RD_STATS *rd_cost_y, RD_STATS *rd_cost_uv,
     THR_MODES mode_index, uint8_t *color_map, BLOCK_SIZE bsize, int64_t this_rd,
@@ -751,20 +754,38 @@ unsigned int av1_get_perpixel_variance_facade(const struct AV1_COMP *cpi,
                                               const struct buf_2d *ref,
                                               BLOCK_SIZE bsize, int plane);
 
-static INLINE int is_mode_intra(PREDICTION_MODE mode) {
+static inline int is_mode_intra(PREDICTION_MODE mode) {
   return mode < INTRA_MODE_END;
 }
 
 // This function will copy usable ref_mv_stack[ref_frame][4] and
 // weight[ref_frame][4] information from ref_mv_stack[ref_frame][8] and
 // weight[ref_frame][8].
-static INLINE void av1_copy_usable_ref_mv_stack_and_weight(
+static inline void av1_copy_usable_ref_mv_stack_and_weight(
     const MACROBLOCKD *xd, MB_MODE_INFO_EXT *const mbmi_ext,
     MV_REFERENCE_FRAME ref_frame) {
   memcpy(mbmi_ext->weight[ref_frame], xd->weight[ref_frame],
          USABLE_REF_MV_STACK_SIZE * sizeof(xd->weight[0][0]));
   memcpy(mbmi_ext->ref_mv_stack[ref_frame], xd->ref_mv_stack[ref_frame],
          USABLE_REF_MV_STACK_SIZE * sizeof(xd->ref_mv_stack[0][0]));
+}
+
+// Get transform rd gate level for the given transform search case.
+static inline int get_txfm_rd_gate_level(
+    const int is_masked_compound_enabled,
+    const int txfm_rd_gate_level[TX_SEARCH_CASES], BLOCK_SIZE bsize,
+    TX_SEARCH_CASE tx_search_case, int eval_motion_mode) {
+  assert(tx_search_case < TX_SEARCH_CASES);
+  if (tx_search_case == TX_SEARCH_MOTION_MODE && !eval_motion_mode &&
+      num_pels_log2_lookup[bsize] > 8)
+    return txfm_rd_gate_level[TX_SEARCH_MOTION_MODE];
+  // Enable aggressive gating of transform search only when masked compound type
+  // is enabled.
+  else if (tx_search_case == TX_SEARCH_COMP_TYPE_MODE &&
+           is_masked_compound_enabled)
+    return txfm_rd_gate_level[TX_SEARCH_COMP_TYPE_MODE];
+
+  return txfm_rd_gate_level[TX_SEARCH_DEFAULT];
 }
 
 #ifdef __cplusplus

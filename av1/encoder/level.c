@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2019, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -209,6 +209,7 @@ static const AV1LevelSpec av1_level_defs[SEQ_LEVELS] = {
     .high_cr = 4.0,
     .max_tiles = 128,
     .max_tile_cols = 16 },
+#if CONFIG_CWG_C013
   { .level = SEQ_LEVEL_7_0,
     .max_picture_size = 142606336,
     .max_h_size = 32768,
@@ -313,6 +314,16 @@ static const AV1LevelSpec av1_level_defs[SEQ_LEVELS] = {
     .high_cr = 4.0,
     .max_tiles = 512,
     .max_tile_cols = 64 },
+#else   // !CONFIG_CWG_C013
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+  UNDEFINED_LEVEL,
+#endif  // CONFIG_CWG_C013
 };
 
 typedef enum {
@@ -549,6 +560,8 @@ static double get_removal_time(int mode, int num_decoded_frame,
   }
 }
 
+#if 0
+// Print the status of the decoder model (for debugging).
 void av1_decoder_model_print_status(const DECODER_MODEL *const decoder_model) {
   printf(
       "\n status %d, num_frame %3d, num_decoded_frame %3d, "
@@ -567,10 +580,12 @@ void av1_decoder_model_print_status(const DECODER_MODEL *const decoder_model) {
            this_buffer->presentation_time);
   }
 }
+#endif
 
 // op_index is the operating point index.
-void av1_decoder_model_init(const AV1_COMP *const cpi, AV1_LEVEL level,
-                            int op_index, DECODER_MODEL *const decoder_model) {
+static void decoder_model_init(const AV1_COMP *const cpi, AV1_LEVEL level,
+                               int op_index,
+                               DECODER_MODEL *const decoder_model) {
   decoder_model->status = DECODER_MODEL_OK;
   decoder_model->level = level;
 
@@ -708,9 +723,9 @@ DECODER_MODEL_STATUS av1_decoder_model_try_smooth_buf(
   }
 }
 
-void av1_decoder_model_process_frame(const AV1_COMP *const cpi,
-                                     size_t coded_bits,
-                                     DECODER_MODEL *const decoder_model) {
+static void decoder_model_process_frame(const AV1_COMP *const cpi,
+                                        size_t coded_bits,
+                                        DECODER_MODEL *const decoder_model) {
   if (!decoder_model || decoder_model->status != DECODER_MODEL_OK) return;
 
   const AV1_COMMON *const cm = &cpi->common;
@@ -906,7 +921,7 @@ void av1_init_level_info(AV1_COMP *cpi) {
         // exceeds level constraints.
         this_model->status = DECODER_MODEL_DISABLED;
       } else {
-        av1_decoder_model_init(cpi, level, op_index, this_model);
+        decoder_model_init(cpi, level, op_index, this_model);
       }
     }
   }
@@ -1017,9 +1032,13 @@ static TARGET_LEVEL_FAIL_ID check_level_constraints(
       break;
     }
 
+#if CONFIG_CWG_C013
     const int max_tile_size = (level >= SEQ_LEVEL_7_0 && level <= SEQ_LEVEL_8_3)
                                   ? MAX_TILE_AREA_LEVEL_7_AND_ABOVE
                                   : MAX_TILE_AREA;
+#else
+    const int max_tile_size = MAX_TILE_AREA;
+#endif
     if (level_stats->max_tile_size > max_tile_size) {
       fail_id = TILE_TOO_LARGE;
       break;
@@ -1322,7 +1341,7 @@ void av1_update_level_info(AV1_COMP *cpi, size_t size, int64_t ts_start,
 
     DECODER_MODEL *const decoder_models = level_info->decoder_models;
     for (AV1_LEVEL level = SEQ_LEVEL_2_0; level < SEQ_LEVELS; ++level) {
-      av1_decoder_model_process_frame(cpi, size << 3, &decoder_models[level]);
+      decoder_model_process_frame(cpi, size << 3, &decoder_models[level]);
     }
 
     // Check whether target level is met.

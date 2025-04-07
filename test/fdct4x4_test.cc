@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2020, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -15,7 +15,7 @@
 #include <tuple>
 
 #include "aom_dsp/aom_dsp_common.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
 #include "config/aom_dsp_rtcd.h"
@@ -59,10 +59,10 @@ template <typename OutputType>
 class Trans4x4FDCT : public libaom_test::TransformTestBase<OutputType>,
                      public ::testing::TestWithParam<Fdct4x4Param<OutputType>> {
  public:
-  virtual ~Trans4x4FDCT() {}
+  ~Trans4x4FDCT() override = default;
 
   using TxfmBaseOutType = libaom_test::TransformTestBase<OutputType>;
-  virtual void SetUp() {
+  void SetUp() override {
     fwd_txfm_ = std::get<0>(this->GetParam());
     TxfmBaseOutType::pitch_ = 4;
     TxfmBaseOutType::height_ = 4;
@@ -71,14 +71,13 @@ class Trans4x4FDCT : public libaom_test::TransformTestBase<OutputType>,
     TxfmBaseOutType::mask_ = (1 << TxfmBaseOutType::bit_depth_) - 1;
     TxfmBaseOutType::num_coeffs_ = std::get<3>(this->GetParam());
   }
-  virtual void TearDown() {}
 
  protected:
-  void RunFwdTxfm(const int16_t *in, OutputType *out, int stride) {
+  void RunFwdTxfm(const int16_t *in, OutputType *out, int stride) override {
     fwd_txfm_(in, out, stride);
   }
 
-  void RunInvTxfm(const OutputType *out, uint8_t *dst, int stride) {
+  void RunInvTxfm(const OutputType *out, uint8_t *dst, int stride) override {
     (void)out;
     (void)dst;
     (void)stride;

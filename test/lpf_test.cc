@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -14,7 +14,7 @@
 #include <string>
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
@@ -127,15 +127,13 @@ uint8_t GetHevThresh(ACMRandom *rnd) {
 template <typename func_type_t, typename params_t>
 class LoopTestParam : public ::testing::TestWithParam<params_t> {
  public:
-  virtual ~LoopTestParam() {}
-  virtual void SetUp() {
+  ~LoopTestParam() override = default;
+  void SetUp() override {
     loopfilter_op_ = std::get<0>(this->GetParam());
     ref_loopfilter_op_ = std::get<1>(this->GetParam());
     bit_depth_ = std::get<2>(this->GetParam());
     mask_ = (1 << bit_depth_) - 1;
   }
-
-  virtual void TearDown() {}
 
  protected:
   int bit_depth_;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -14,12 +14,12 @@
 #include <string>
 
 #include "aom_mem/aom_mem.h"
+#include "gtest/gtest.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
 #include "test/i420_video_source.h"
 #include "test/md5_helper.h"
 #include "test/util.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 namespace {
 
@@ -63,16 +63,16 @@ class AV1DecodeMultiThreadedTest
     }
   }
 
-  virtual ~AV1DecodeMultiThreadedTest() {
+  ~AV1DecodeMultiThreadedTest() override {
     delete single_thread_dec_;
     for (int i = 0; i < kNumMultiThreadDecoders; ++i)
       delete multi_thread_dec_[i];
   }
 
-  virtual void SetUp() { InitializeConfig(libaom_test::kTwoPassGood); }
+  void SetUp() override { InitializeConfig(libaom_test::kTwoPassGood); }
 
-  virtual void PreEncodeFrameHook(libaom_test::VideoSource *video,
-                                  libaom_test::Encoder *encoder) {
+  void PreEncodeFrameHook(libaom_test::VideoSource *video,
+                          libaom_test::Encoder *encoder) override {
     if (video->frame() == 0) {
       encoder->Control(AV1E_SET_TILE_COLUMNS, n_tile_cols_);
       encoder->Control(AV1E_SET_TILE_ROWS, n_tile_rows_);
@@ -93,7 +93,7 @@ class AV1DecodeMultiThreadedTest
     md5->Add(img);
   }
 
-  virtual void FramePktHook(const aom_codec_cx_pkt_t *pkt) {
+  void FramePktHook(const aom_codec_cx_pkt_t *pkt) override {
     UpdateMD5(single_thread_dec_, pkt, &md5_single_thread_);
 
     for (int i = 0; i < kNumMultiThreadDecoders; ++i)

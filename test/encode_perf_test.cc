@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -10,17 +10,15 @@
  */
 
 #include <string>
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
-#include "config/aom_config.h"
-#include "config/aom_version.h"
-
+#include "aom/aom_codec.h"
+#include "aom_ports/aom_timer.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
 #include "test/i420_video_source.h"
 #include "test/util.h"
 #include "test/y4m_video_source.h"
-#include "aom_ports/aom_timer.h"
 
 namespace {
 
@@ -63,11 +61,10 @@ class AV1EncodePerfTest
       : EncoderTest(GET_PARAM(0)), min_psnr_(kMaxPsnr), nframes_(0),
         encoding_mode_(GET_PARAM(1)), speed_(0), threads_(1) {}
 
-  virtual ~AV1EncodePerfTest() {}
+  ~AV1EncodePerfTest() override = default;
 
-  virtual void SetUp() {
-    InitializeConfig();
-    SetMode(encoding_mode_);
+  void SetUp() override {
+    InitializeConfig(encoding_mode_);
 
     cfg_.g_lag_in_frames = 0;
     cfg_.rc_min_quantizer = 2;
@@ -83,8 +80,8 @@ class AV1EncodePerfTest
     cfg_.g_threads = threads_;
   }
 
-  virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
-                                  ::libaom_test::Encoder *encoder) {
+  void PreEncodeFrameHook(::libaom_test::VideoSource *video,
+                          ::libaom_test::Encoder *encoder) override {
     if (video->frame() == 0) {
       const int log2_tile_columns = 3;
       encoder->Control(AOME_SET_CPUUSED, speed_);
@@ -94,19 +91,19 @@ class AV1EncodePerfTest
     }
   }
 
-  virtual void BeginPassHook(unsigned int /*pass*/) {
+  void BeginPassHook(unsigned int /*pass*/) override {
     min_psnr_ = kMaxPsnr;
     nframes_ = 0;
   }
 
-  virtual void PSNRPktHook(const aom_codec_cx_pkt_t *pkt) {
+  void PSNRPktHook(const aom_codec_cx_pkt_t *pkt) override {
     if (pkt->data.psnr.psnr[0] < min_psnr_) {
       min_psnr_ = pkt->data.psnr.psnr[0];
     }
   }
 
   // for performance reasons don't decode
-  virtual bool DoDecode() { return 0; }
+  bool DoDecode() const override { return false; }
 
   double min_psnr() const { return min_psnr_; }
 
@@ -165,7 +162,7 @@ TEST_P(AV1EncodePerfTest, PerfTest) {
 
         printf("{\n");
         printf("\t\"type\" : \"encode_perf_test\",\n");
-        printf("\t\"version\" : \"%s\",\n", VERSION_STRING_NOSP);
+        printf("\t\"version\" : \"%s\",\n", aom_codec_version_str());
         printf("\t\"videoName\" : \"%s\",\n", display_name.c_str());
         printf("\t\"encodeTimeSecs\" : %f,\n", elapsed_secs);
         printf("\t\"totalFrames\" : %u,\n", frames);

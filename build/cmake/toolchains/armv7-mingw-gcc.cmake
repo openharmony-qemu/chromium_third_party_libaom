@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018, Alliance for Open Media. All rights reserved
+# Copyright (c) 2018, Alliance for Open Media. All rights reserved.
 #
 # This source code is subject to the terms of the BSD 2 Clause License and the
 # Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License was
@@ -17,6 +17,8 @@ set(CMAKE_SYSTEM_PROCESSOR "armv7")
 set(CMAKE_SYSTEM_NAME "Windows")
 
 if("${CROSS}" STREQUAL "")
+
+  # Default the cross compiler prefix to one used by MSYS2.
   set(CROSS armv7-w64-mingw32-)
 endif()
 

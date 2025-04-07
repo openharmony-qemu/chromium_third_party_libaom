@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,7 +11,7 @@
 
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/av1_rtcd.h"
 
@@ -41,8 +41,8 @@ const int MaxTestNum = 100;
 
 class AV1FilterIntraPredTest : public ::testing::TestWithParam<PredParams> {
  public:
-  virtual ~AV1FilterIntraPredTest() {}
-  virtual void SetUp() {
+  ~AV1FilterIntraPredTest() override = default;
+  void SetUp() override {
     PredFuncMode funcMode = GET_PARAM(0);
     predFuncRef_ = std::get<0>(funcMode);
     predFunc_ = std::get<1>(funcMode);
@@ -57,7 +57,7 @@ class AV1FilterIntraPredTest : public ::testing::TestWithParam<PredParams> {
     ASSERT_NE(pred_, nullptr);
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     delete[] alloc_;
     delete[] predRef_;
     delete[] pred_;
@@ -171,6 +171,8 @@ INSTANTIATE_TEST_SUITE_P(
 #endif  // HAVE_SSE4_1
 
 #if HAVE_NEON
+// TODO(aomedia:349436249): enable for armv7 after SIGBUS is fixed.
+#if AOM_ARCH_AARCH64
 const PredFuncMode kPredFuncMdArrayNEON[] = {
   make_tuple(&av1_filter_intra_predictor_c, &av1_filter_intra_predictor_neon,
              FILTER_DC_PRED),
@@ -192,6 +194,9 @@ INSTANTIATE_TEST_SUITE_P(
     NEON, AV1FilterIntraPredTest,
     ::testing::Combine(::testing::ValuesIn(kPredFuncMdArrayNEON),
                        ::testing::ValuesIn(kTxSizeNEON)));
+#else   // !AOM_ARCH_AARCH64
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(AV1FilterIntraPredTest);
+#endif  // AOM_ARCH_AARCH64
 #endif  // HAVE_NEON
 
 }  // namespace

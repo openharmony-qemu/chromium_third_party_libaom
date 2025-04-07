@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017, Alliance for Open Media. All rights reserved
+# Copyright (c) 2017, Alliance for Open Media. All rights reserved.
 #
 # This source code is subject to the terms of the BSD 2 Clause License and the
 # Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License was
@@ -18,14 +18,16 @@ list(APPEND AOM_PORTS_INCLUDES "${AOM_ROOT}/aom_ports/aom_once.h"
             "${AOM_ROOT}/aom_ports/emmintrin_compat.h"
             "${AOM_ROOT}/aom_ports/mem.h" "${AOM_ROOT}/aom_ports/mem_ops.h"
             "${AOM_ROOT}/aom_ports/mem_ops_aligned.h"
-            "${AOM_ROOT}/aom_ports/msvc.h" "${AOM_ROOT}/aom_ports/sanitizer.h")
+            "${AOM_ROOT}/aom_ports/sanitizer.h")
 
 list(APPEND AOM_PORTS_ASM_X86 "${AOM_ROOT}/aom_ports/float.asm")
 
 list(APPEND AOM_PORTS_INCLUDES_X86 "${AOM_ROOT}/aom_ports/x86_abi_support.asm")
 
-list(APPEND AOM_PORTS_SOURCES_ARM "${AOM_ROOT}/aom_ports/arm.h"
-            "${AOM_ROOT}/aom_ports/arm_cpudetect.c")
+list(APPEND AOM_PORTS_SOURCES_AARCH32
+            "${AOM_ROOT}/aom_ports/aarch32_cpudetect.c")
+list(APPEND AOM_PORTS_SOURCES_AARCH64
+            "${AOM_ROOT}/aom_ports/aarch64_cpudetect.c")
 
 if(CONFIG_RUNTIME_CPU_DETECT AND ANDROID_NDK)
   include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
@@ -49,12 +51,19 @@ list(APPEND AOM_PORTS_SOURCES_PPC "${AOM_ROOT}/aom_ports/ppc.h"
 #
 # * The libaom target must exist before this function is called.
 function(setup_aom_ports_targets)
-  if(WIN32 AND "${AOM_TARGET_CPU}" STREQUAL "x86_64")
+  if(XCODE AND "${AOM_TARGET_CPU}" STREQUAL "x86_64")
     add_asm_library("aom_ports" "AOM_PORTS_ASM_X86")
-    set(aom_ports_asm_lib 1)
+    # Xcode is the only one
+    set(aom_ports_is_embedded 1)
+    set(aom_ports_has_symbols 1)
+  elseif(WIN32 AND "${AOM_TARGET_CPU}" STREQUAL "x86_64")
+    add_asm_library("aom_ports" "AOM_PORTS_ASM_X86")
+    set(aom_ports_has_symbols 1)
+  elseif("${AOM_TARGET_CPU}" STREQUAL "arm64")
+    add_library(aom_ports OBJECT ${AOM_PORTS_SOURCES_AARCH64})
     set(aom_ports_has_symbols 1)
   elseif("${AOM_TARGET_CPU}" MATCHES "arm")
-    add_library(aom_ports OBJECT ${AOM_PORTS_SOURCES_ARM})
+    add_library(aom_ports OBJECT ${AOM_PORTS_SOURCES_AARCH32})
     set(aom_ports_has_symbols 1)
   elseif("${AOM_TARGET_CPU}" MATCHES "ppc")
     add_library(aom_ports OBJECT ${AOM_PORTS_SOURCES_PPC})
@@ -74,14 +83,7 @@ function(setup_aom_ports_targets)
   # libaom_srcs.*; if it becomes necessary for a particular generator another
   # method should be used.
   if(aom_ports_has_symbols)
-    if(aom_ports_asm_lib)
-      # When aom_ports is an asm library its name changes based on build
-      # configuration. This handles adding sources to the correct target(s).
-      target_sources(aom_ports_static PRIVATE ${AOM_PORTS_INCLUDES})
-      if(BUILD_SHARED_LIBS)
-        target_sources(aom_ports_shared PRIVATE ${AOM_PORTS_INCLUDES})
-      endif()
-    else()
+    if(NOT aom_ports_is_embedded)
       target_sources(aom_ports PRIVATE ${AOM_PORTS_INCLUDES})
     endif()
     set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} PARENT_SCOPE)

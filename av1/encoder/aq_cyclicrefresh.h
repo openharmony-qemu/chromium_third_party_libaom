@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -229,7 +229,7 @@ void av1_cyclic_refresh_update_segment(const struct AV1_COMP *cpi,
 
 /*!\brief Initialize counters used for cyclic refresh.
  *
- * Initializes cyclic refresh counters cnt_zeromv, actual_num_seg1_blocks and
+ * Initializes cyclic refresh counters actual_num_seg1_blocks and
  * actual_num_seg2_blocks.
  *
  * \ingroup cyclic_refresh
@@ -238,14 +238,14 @@ void av1_cyclic_refresh_update_segment(const struct AV1_COMP *cpi,
  *
  * \param[in]   x         Pointer to MACROBLOCK structure
  *
- * \remark Update the \c x->cnt_zeromv, the \c x->actual_num_seg1_blocks and
- * the \c x->actual_num_seg1_blocks.
+ * \remark Update the \c x->actual_num_seg1_blocks and the
+ * \c x->actual_num_seg2_blocks.
  */
 void av1_init_cyclic_refresh_counters(MACROBLOCK *const x);
 
 /*!\brief Accumulate cyclic refresh counters.
  *
- * Accumulates cyclic refresh counters cnt_zeromv, actual_num_seg1_blocks and
+ * Accumulates cyclic refresh counters actual_num_seg1_blocks and
  * actual_num_seg2_blocks from MACROBLOCK strcture to CYCLIC_REFRESH strcture.
  *
  * \ingroup cyclic_refresh
@@ -255,9 +255,8 @@ void av1_init_cyclic_refresh_counters(MACROBLOCK *const x);
  * \param[in]   cyclic_refresh Pointer to CYCLIC_REFRESH structure
  * \param[in]   x              Pointer to MACROBLOCK structure
  *
- * \remark Update the \c cyclic_refresh->cnt_zeromv, the \c
- * cyclic_refresh->actual_num_seg1_blocks and the \c
- * cyclic_refresh->actual_num_seg1_blocks.
+ * \remark Update the \c cyclic_refresh->actual_num_seg1_blocks and the
+ * \c cyclic_refresh->actual_num_seg2_blocks.
  */
 void av1_accumulate_cyclic_refresh_counters(
     CYCLIC_REFRESH *const cyclic_refresh, const MACROBLOCK *const x);
@@ -308,16 +307,14 @@ void av1_cyclic_refresh_setup(struct AV1_COMP *const cpi);
 
 int av1_cyclic_refresh_get_rdmult(const CYCLIC_REFRESH *cr);
 
-void av1_cyclic_refresh_reset_resize(struct AV1_COMP *const cpi);
-
 int av1_cyclic_refresh_disable_lf_cdef(struct AV1_COMP *const cpi);
 
-static INLINE int cyclic_refresh_segment_id_boosted(int segment_id) {
+static inline int cyclic_refresh_segment_id_boosted(int segment_id) {
   return segment_id == CR_SEGMENT_ID_BOOST1 ||
          segment_id == CR_SEGMENT_ID_BOOST2;
 }
 
-static INLINE int cyclic_refresh_segment_id(int segment_id) {
+static inline int cyclic_refresh_segment_id(int segment_id) {
   if (segment_id == CR_SEGMENT_ID_BOOST1)
     return CR_SEGMENT_ID_BOOST1;
   else if (segment_id == CR_SEGMENT_ID_BOOST2)

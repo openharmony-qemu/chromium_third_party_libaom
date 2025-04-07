@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,7 +11,7 @@
 
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "test/acm_random.h"
 #include "test/register_state_check.h"
@@ -33,12 +33,12 @@ typedef std::tuple<const HorverFunc> HorverTestParam;
 
 class HorverTest : public ::testing::TestWithParam<HorverTestParam> {
  public:
-  virtual void SetUp() {
+  void SetUp() override {
     data_buf_ = (int16_t *)aom_malloc(MAX_SB_SQUARE * sizeof(int16_t));
     ASSERT_NE(data_buf_, nullptr);
     target_func_ = GET_PARAM(0);
   }
-  virtual void TearDown() { aom_free(data_buf_); }
+  void TearDown() override { aom_free(data_buf_); }
   void RunHorverTest();
   void RunHorverTest_ExtremeValues();
   void RunHorverSpeedTest(int run_times);

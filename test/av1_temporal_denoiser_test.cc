@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -43,11 +43,9 @@ class AV1DenoiserTest
     : public ::testing::Test,
       public ::testing::WithParamInterface<AV1DenoiserTestParam> {
  public:
-  virtual ~AV1DenoiserTest() {}
+  ~AV1DenoiserTest() override = default;
 
-  virtual void SetUp() { bs_ = GET_PARAM(1); }
-
-  virtual void TearDown() {}
+  void SetUp() override { bs_ = GET_PARAM(1); }
 
  protected:
   BLOCK_SIZE bs_;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2021, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,6 +11,7 @@
 
 #include <cstdlib>
 
+#include "gtest/gtest.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
 #include "test/i420_video_source.h"
@@ -27,9 +28,9 @@ class CpuUsedFirstpassTest
  protected:
   CpuUsedFirstpassTest()
       : EncoderTest(GET_PARAM(0)), second_pass_cpu_used_(GET_PARAM(2)) {}
-  virtual ~CpuUsedFirstpassTest() {}
+  ~CpuUsedFirstpassTest() override = default;
 
-  virtual void SetUp() {
+  void SetUp() override {
     InitializeConfig(::libaom_test::kTwoPassGood);
     const aom_rational timebase = { 1, 30 };
     cfg_.g_timebase = timebase;
@@ -40,7 +41,7 @@ class CpuUsedFirstpassTest
     init_flags_ = AOM_CODEC_USE_PSNR;
   }
 
-  virtual void BeginPassHook(unsigned int pass) {
+  void BeginPassHook(unsigned int pass) override {
     psnr_ = 0.0;
     nframes_ = 0;
 
@@ -50,13 +51,13 @@ class CpuUsedFirstpassTest
       cpu_used_ = second_pass_cpu_used_;
   }
 
-  virtual void PSNRPktHook(const aom_codec_cx_pkt_t *pkt) {
+  void PSNRPktHook(const aom_codec_cx_pkt_t *pkt) override {
     psnr_ += pkt->data.psnr.psnr[0];
     nframes_++;
   }
 
-  virtual void PreEncodeFrameHook(::libaom_test::VideoSource *video,
-                                  ::libaom_test::Encoder *encoder) {
+  void PreEncodeFrameHook(::libaom_test::VideoSource *video,
+                          ::libaom_test::Encoder *encoder) override {
     if (video->frame() == 0) {
       encoder->Control(AOME_SET_CPUUSED, cpu_used_);
       encoder->Control(AOME_SET_ENABLEAUTOALTREF, 1);
@@ -73,6 +74,10 @@ class CpuUsedFirstpassTest
   double GetPsnrDiffThreshold() { return kPsnrDiffThreshold; }
 
   void DoTest() {
+    if (GET_PARAM(1) == second_pass_cpu_used_) {
+      GTEST_SKIP() << "Reference cpu used values match test cpu used values.";
+    }
+
     libaom_test::I420VideoSource video("niklas_640_480_30.yuv", 640, 480,
                                        cfg_.g_timebase.den, cfg_.g_timebase.num,
                                        0, 30);
@@ -84,7 +89,6 @@ class CpuUsedFirstpassTest
     ref_psnr = GetAveragePsnr();
 
     first_pass_cpu_used_ = GET_PARAM(1);
-    if (first_pass_cpu_used_ == second_pass_cpu_used_) return;
     ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
     psnr_diff = std::abs(ref_psnr - GetAveragePsnr());
     EXPECT_LT(psnr_diff, GetPsnrDiffThreshold())

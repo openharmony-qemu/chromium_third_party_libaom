@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -23,6 +23,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void aom_comp_mask_upsampled_pred(MACROBLOCKD *xd, const AV1_COMMON *const cm,
+                                  int mi_row, int mi_col, const MV *const mv,
+                                  uint8_t *comp_pred, const uint8_t *pred,
+                                  int width, int height, int subpel_x_q3,
+                                  int subpel_y_q3, const uint8_t *ref,
+                                  int ref_stride, const uint8_t *mask,
+                                  int mask_stride, int invert_mask,
+                                  int subpel_search);
 
 void aom_highbd_comp_mask_upsampled_pred(
     MACROBLOCKD *xd, const struct AV1Common *const cm, int mi_row, int mi_col,

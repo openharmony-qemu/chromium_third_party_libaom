@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -14,7 +14,7 @@
 #include <new>
 #include <tuple>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/util.h"
 
@@ -23,7 +23,6 @@
 #include "aom_dsp/psnr.h"
 #include "aom_dsp/ssim.h"
 #include "aom_ports/mem.h"
-#include "aom_ports/msvc.h"
 #include "aom_scale/yv12config.h"
 
 using libaom_test::ACMRandom;
@@ -94,7 +93,7 @@ double compute_aomssim(const YV12_BUFFER_CONFIG *source,
 
 class HBDMetricsTestBase {
  public:
-  virtual ~HBDMetricsTestBase() {}
+  virtual ~HBDMetricsTestBase() = default;
 
  protected:
   void RunAccuracyCheck() {
@@ -112,10 +111,10 @@ class HBDMetricsTestBase {
     memset(&hbd_src, 0, sizeof(hbd_src));
     memset(&hbd_dst, 0, sizeof(hbd_dst));
 
-    aom_alloc_frame_buffer(&lbd_src, width, height, 1, 1, 0, 32, 16, 0, 0);
-    aom_alloc_frame_buffer(&lbd_dst, width, height, 1, 1, 0, 32, 16, 0, 0);
-    aom_alloc_frame_buffer(&hbd_src, width, height, 1, 1, 1, 32, 16, 0, 0);
-    aom_alloc_frame_buffer(&hbd_dst, width, height, 1, 1, 1, 32, 16, 0, 0);
+    aom_alloc_frame_buffer(&lbd_src, width, height, 1, 1, 0, 32, 16, false, 0);
+    aom_alloc_frame_buffer(&lbd_dst, width, height, 1, 1, 0, 32, 16, false, 0);
+    aom_alloc_frame_buffer(&hbd_src, width, height, 1, 1, 1, 32, 16, false, 0);
+    aom_alloc_frame_buffer(&hbd_dst, width, height, 1, 1, 1, 32, 16, false, 0);
 
     memset(lbd_src.buffer_alloc, kPixFiller, lbd_src.buffer_alloc_sz);
     while (i < lbd_src.buffer_alloc_sz) {
@@ -179,14 +178,13 @@ typedef std::tuple<LBDMetricFunc, HBDMetricFunc, int, int, double>
 class HBDMetricsTest : public HBDMetricsTestBase,
                        public ::testing::TestWithParam<MetricTestTParam> {
  public:
-  virtual void SetUp() {
+  void SetUp() override {
     lbd_metric_ = GET_PARAM(0);
     hbd_metric_ = GET_PARAM(1);
     input_bit_depth_ = GET_PARAM(2);
     bit_depth_ = GET_PARAM(3);
     threshold_ = GET_PARAM(4);
   }
-  virtual void TearDown() {}
 };
 
 TEST_P(HBDMetricsTest, RunAccuracyCheck) { RunAccuracyCheck(); }

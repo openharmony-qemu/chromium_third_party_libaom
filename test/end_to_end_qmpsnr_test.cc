@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2022, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -14,11 +14,11 @@
 #include "aom_ports/mem.h"
 #include "aom_dsp/ssim.h"
 #include "av1/common/blockd.h"
+#include "gtest/gtest.h"
 #include "test/codec_factory.h"
 #include "test/encode_test_driver.h"
 #include "test/util.h"
 #include "test/y4m_video_source.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 namespace {
 
@@ -69,7 +69,7 @@ class EndToEndQMPSNRTest
         test_video_param_(GET_PARAM(2)), cpu_used_(GET_PARAM(3)), nframes_(0),
         ssim_(0.0) {}
 
-  ~EndToEndQMPSNRTest() override {}
+  ~EndToEndQMPSNRTest() override = default;
 
   void SetUp() override { InitializeConfig(encoding_mode_); }
 

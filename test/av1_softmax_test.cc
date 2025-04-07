@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2021, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -19,10 +19,10 @@
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
 #include "config/av1_rtcd.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/register_state_check.h"
 #include "test/util.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 namespace {
 using FastSoftmaxFn = void (*)(const float *const input, float *output);
@@ -35,7 +35,7 @@ constexpr float kAbsEpsilon = 5e-3f;
 class FastSoftmaxTest : public ::testing::TestWithParam<FastSoftmaxTestParams> {
  public:
   FastSoftmaxTest() : target_fn_(GET_PARAM(0)), num_classes_(GET_PARAM(1)) {}
-  virtual void SetUp() {
+  void SetUp() override {
     ref_buf_.reset(new (std::nothrow) float[num_classes_]());
     ASSERT_NE(ref_buf_, nullptr);
     dst_buf_.reset(new (std::nothrow) float[num_classes_]());

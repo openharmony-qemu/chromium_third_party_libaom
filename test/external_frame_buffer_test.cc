@@ -1,11 +1,12 @@
 /*
- *  Copyright (c) 2014 The WebM project authors. All Rights Reserved.
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree. An additional intellectual property rights grant can be found
- *  in the file PATENTS.  All contributing project authors may
- *  be found in the AUTHORS file in the root of the source tree.
+ * This source code is subject to the terms of the BSD 2 Clause License and
+ * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
+ * was not distributed with this source code in the LICENSE file, you can
+ * obtain it at www.aomedia.org/license/software. If the Alliance for Open
+ * Media Patent License 1.0 was not distributed with this source code in the
+ * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
 #include <memory>
@@ -214,13 +215,12 @@ class ExternalFrameBufferMD5Test
       : DecoderTest(GET_PARAM(::libaom_test::kCodecFactoryParam)),
         md5_file_(nullptr), num_buffers_(0) {}
 
-  virtual ~ExternalFrameBufferMD5Test() {
+  ~ExternalFrameBufferMD5Test() override {
     if (md5_file_ != nullptr) fclose(md5_file_);
   }
 
-  virtual void PreDecodeFrameHook(
-      const libaom_test::CompressedVideoSource &video,
-      libaom_test::Decoder *decoder) {
+  void PreDecodeFrameHook(const libaom_test::CompressedVideoSource &video,
+                          libaom_test::Decoder *decoder) override {
     if (num_buffers_ > 0 && video.frame_number() == 0) {
       // Have libaom use frame buffers we create.
       ASSERT_TRUE(fb_list_.CreateBufferList(num_buffers_));
@@ -236,8 +236,8 @@ class ExternalFrameBufferMD5Test
         << "Md5 file open failed. Filename: " << md5_file_name_;
   }
 
-  virtual void DecompressedFrameHook(const aom_image_t &img,
-                                     const unsigned int frame_number) {
+  void DecompressedFrameHook(const aom_image_t &img,
+                             const unsigned int frame_number) override {
     ASSERT_NE(md5_file_, nullptr);
     char expected_md5[33];
     char junk[128];
@@ -315,7 +315,7 @@ class ExternalFrameBufferTest : public ::testing::Test {
   ExternalFrameBufferTest()
       : video_(nullptr), decoder_(nullptr), num_buffers_(0) {}
 
-  virtual void SetUp() {
+  void SetUp() override {
     video_ = new libaom_test::WebMVideoSource(kAV1TestFile);
     ASSERT_NE(video_, nullptr);
     video_->Init();
@@ -327,7 +327,7 @@ class ExternalFrameBufferTest : public ::testing::Test {
     ASSERT_NE(decoder_, nullptr);
   }
 
-  virtual void TearDown() {
+  void TearDown() override {
     delete decoder_;
     decoder_ = nullptr;
     delete video_;
@@ -383,7 +383,7 @@ class ExternalFrameBufferTest : public ::testing::Test {
 
 class ExternalFrameBufferNonRefTest : public ExternalFrameBufferTest {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     video_ = new libaom_test::IVFVideoSource(kAV1NonRefTestFile);
     ASSERT_NE(video_, nullptr);
     video_->Init();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2018, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -18,9 +18,9 @@
 
 #include "aom_ports/aom_timer.h"
 #include "av1/encoder/hash.h"
+#include "gtest/gtest.h"
 #include "test/acm_random.h"
 #include "test/util.h"
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
 
 namespace {
 
@@ -31,10 +31,10 @@ typedef std::tuple<get_crc32c_value_func, int> HashParam;
 
 class AV1Crc32cHashTest : public ::testing::TestWithParam<HashParam> {
  public:
-  ~AV1Crc32cHashTest();
-  void SetUp();
+  ~AV1Crc32cHashTest() override;
+  void SetUp() override;
 
-  void TearDown();
+  void TearDown() override;
 
  protected:
   void RunCheckOutput(get_crc32c_value_func test_impl);
@@ -49,7 +49,7 @@ class AV1Crc32cHashTest : public ::testing::TestWithParam<HashParam> {
   size_t length_;
 };
 
-AV1Crc32cHashTest::~AV1Crc32cHashTest() {}
+AV1Crc32cHashTest::~AV1Crc32cHashTest() = default;
 
 void AV1Crc32cHashTest::SetUp() {
   rnd_.Reset(libaom_test::ACMRandom::DeterministicSeed());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,7 +11,7 @@
 
 #include <string>
 
-#include "third_party/googletest/src/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 #include "config/aom_config.h"
 #include "config/aom_dsp_rtcd.h"
@@ -155,7 +155,7 @@ class AV1IntraPredTest
   }
 
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     params_ = this->GetParam();
     stride_ = params_.block_width * 3;
     mask_ = (1 << params_.bit_depth) - 1;
@@ -195,19 +195,19 @@ class AV1IntraPredTest
 #if CONFIG_AV1_HIGHBITDEPTH
 class HighbdIntraPredTest : public AV1IntraPredTest<HighbdIntraPred, uint16_t> {
  protected:
-  void Predict() {
+  void Predict() override {
     const int bit_depth = params_.bit_depth;
     params_.ref_fn(ref_dst_, stride_, above_row_, left_col_, bit_depth);
     API_REGISTER_STATE_CHECK(
         params_.pred_fn(dst_, stride_, above_row_, left_col_, bit_depth));
   }
-  void PredictRefSpeedTest(int num) {
+  void PredictRefSpeedTest(int num) override {
     const int bit_depth = params_.bit_depth;
     for (int i = 0; i < num; i++) {
       params_.ref_fn(ref_dst_, stride_, above_row_, left_col_, bit_depth);
     }
   }
-  void PredictFncSpeedTest(int num) {
+  void PredictFncSpeedTest(int num) override {
     const int bit_depth = params_.bit_depth;
     for (int i = 0; i < num; i++) {
       params_.pred_fn(dst_, stride_, above_row_, left_col_, bit_depth);
@@ -220,17 +220,17 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(HighbdIntraPredTest);
 
 class LowbdIntraPredTest : public AV1IntraPredTest<IntraPred, uint8_t> {
  protected:
-  void Predict() {
+  void Predict() override {
     params_.ref_fn(ref_dst_, stride_, above_row_, left_col_);
     API_REGISTER_STATE_CHECK(
         params_.pred_fn(dst_, stride_, above_row_, left_col_));
   }
-  void PredictRefSpeedTest(int num) {
+  void PredictRefSpeedTest(int num) override {
     for (int i = 0; i < num; i++) {
       params_.ref_fn(ref_dst_, stride_, above_row_, left_col_);
     }
   }
-  void PredictFncSpeedTest(int num) {
+  void PredictFncSpeedTest(int num) override {
     for (int i = 0; i < num; i++) {
       params_.pred_fn(dst_, stride_, above_row_, left_col_);
     }
@@ -292,6 +292,7 @@ TEST_P(LowbdIntraPredTest, DISABLED_Speed) {
       &aom_highbd_##type##_predictor_##width##x##height##_c, width, height, \
       bd)
 
+#if !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
 #define highbd_intrapred(type, opt, bd)                                        \
   highbd_entry(type, 4, 4, opt, bd), highbd_entry(type, 4, 8, opt, bd),        \
       highbd_entry(type, 4, 16, opt, bd), highbd_entry(type, 8, 4, opt, bd),   \
@@ -305,6 +306,18 @@ TEST_P(LowbdIntraPredTest, DISABLED_Speed) {
       highbd_entry(type, 32, 64, opt, bd),                                     \
       highbd_entry(type, 64, 16, opt, bd),                                     \
       highbd_entry(type, 64, 32, opt, bd), highbd_entry(type, 64, 64, opt, bd)
+#else
+#define highbd_intrapred(type, opt, bd)                                       \
+  highbd_entry(type, 4, 4, opt, bd), highbd_entry(type, 4, 8, opt, bd),       \
+      highbd_entry(type, 8, 4, opt, bd), highbd_entry(type, 8, 8, opt, bd),   \
+      highbd_entry(type, 8, 16, opt, bd), highbd_entry(type, 16, 8, opt, bd), \
+      highbd_entry(type, 16, 16, opt, bd),                                    \
+      highbd_entry(type, 16, 32, opt, bd),                                    \
+      highbd_entry(type, 32, 16, opt, bd),                                    \
+      highbd_entry(type, 32, 32, opt, bd),                                    \
+      highbd_entry(type, 32, 64, opt, bd),                                    \
+      highbd_entry(type, 64, 32, opt, bd), highbd_entry(type, 64, 64, opt, bd)
+#endif  // !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
 #endif  // CONFIG_AV1_HIGHBITDEPTH
 
 // ---------------------------------------------------------------------------
@@ -315,6 +328,7 @@ TEST_P(LowbdIntraPredTest, DISABLED_Speed) {
                            &aom_##type##_predictor_##width##x##height##_c,     \
                            width, height, 8)
 
+#if !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
 #define lowbd_intrapred(type, opt)                                    \
   lowbd_entry(type, 4, 4, opt), lowbd_entry(type, 4, 8, opt),         \
       lowbd_entry(type, 4, 16, opt), lowbd_entry(type, 8, 4, opt),    \
@@ -326,6 +340,16 @@ TEST_P(LowbdIntraPredTest, DISABLED_Speed) {
       lowbd_entry(type, 32, 32, opt), lowbd_entry(type, 32, 64, opt), \
       lowbd_entry(type, 64, 16, opt), lowbd_entry(type, 64, 32, opt), \
       lowbd_entry(type, 64, 64, opt)
+#else
+#define lowbd_intrapred(type, opt)                                    \
+  lowbd_entry(type, 4, 4, opt), lowbd_entry(type, 4, 8, opt),         \
+      lowbd_entry(type, 8, 4, opt), lowbd_entry(type, 8, 8, opt),     \
+      lowbd_entry(type, 8, 16, opt), lowbd_entry(type, 16, 8, opt),   \
+      lowbd_entry(type, 16, 16, opt), lowbd_entry(type, 16, 32, opt), \
+      lowbd_entry(type, 32, 16, opt), lowbd_entry(type, 32, 32, opt), \
+      lowbd_entry(type, 32, 64, opt), lowbd_entry(type, 64, 32, opt), \
+      lowbd_entry(type, 64, 64, opt)
+#endif  // !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
 
 #if HAVE_SSE2
 const IntraPredFunc<IntraPred> LowbdIntraPredTestVector[] = {
@@ -340,30 +364,11 @@ INSTANTIATE_TEST_SUITE_P(SSE2, LowbdIntraPredTest,
 
 #if HAVE_NEON
 const IntraPredFunc<IntraPred> LowbdIntraPredTestVectorNeon[] = {
-  lowbd_entry(dc, 4, 4, neon),        lowbd_entry(dc, 8, 8, neon),
-  lowbd_entry(dc, 16, 16, neon),      lowbd_entry(dc, 32, 32, neon),
-  lowbd_entry(dc, 64, 64, neon),
-
-  lowbd_entry(dc_top, 4, 4, neon),    lowbd_entry(dc_top, 8, 8, neon),
-  lowbd_entry(dc_top, 16, 16, neon),  lowbd_entry(dc_top, 32, 32, neon),
-  lowbd_entry(dc_top, 64, 64, neon),
-
-  lowbd_entry(dc_left, 4, 4, neon),   lowbd_entry(dc_left, 8, 8, neon),
-  lowbd_entry(dc_left, 16, 16, neon), lowbd_entry(dc_left, 32, 32, neon),
-  lowbd_entry(dc_left, 64, 64, neon),
-
-  lowbd_entry(dc_128, 4, 4, neon),    lowbd_entry(dc_128, 8, 8, neon),
-  lowbd_entry(dc_128, 16, 16, neon),  lowbd_entry(dc_128, 32, 32, neon),
-  lowbd_entry(dc_128, 64, 64, neon),
-
-  lowbd_entry(v, 4, 4, neon),         lowbd_entry(v, 8, 8, neon),
-  lowbd_entry(v, 16, 16, neon),       lowbd_entry(v, 32, 32, neon),
-
-  lowbd_entry(h, 4, 4, neon),         lowbd_entry(h, 8, 8, neon),
-  lowbd_entry(h, 16, 16, neon),       lowbd_entry(h, 32, 32, neon),
-
-  lowbd_intrapred(smooth, neon),      lowbd_intrapred(smooth_v, neon),
-  lowbd_intrapred(smooth_h, neon),    lowbd_intrapred(paeth, neon),
+  lowbd_intrapred(dc, neon),       lowbd_intrapred(dc_top, neon),
+  lowbd_intrapred(dc_left, neon),  lowbd_intrapred(dc_128, neon),
+  lowbd_intrapred(v, neon),        lowbd_intrapred(h, neon),
+  lowbd_intrapred(smooth, neon),   lowbd_intrapred(smooth_v, neon),
+  lowbd_intrapred(smooth_h, neon), lowbd_intrapred(paeth, neon),
 };
 
 INSTANTIATE_TEST_SUITE_P(NEON, LowbdIntraPredTest,
@@ -384,6 +389,7 @@ INSTANTIATE_TEST_SUITE_P(SSSE3, LowbdIntraPredTest,
 
 #if HAVE_AVX2
 const IntraPredFunc<IntraPred> LowbdIntraPredTestVectorAvx2[] = {
+#if !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
   lowbd_entry(dc, 32, 16, avx2),      lowbd_entry(dc, 32, 32, avx2),
   lowbd_entry(dc, 32, 64, avx2),      lowbd_entry(dc, 64, 16, avx2),
   lowbd_entry(dc, 64, 32, avx2),      lowbd_entry(dc, 64, 64, avx2),
@@ -407,10 +413,37 @@ const IntraPredFunc<IntraPred> LowbdIntraPredTestVectorAvx2[] = {
   lowbd_entry(h, 32, 32, avx2),
 
   lowbd_entry(paeth, 16, 8, avx2),    lowbd_entry(paeth, 16, 16, avx2),
-  lowbd_entry(paeth, 16, 32, avx2),   lowbd_entry(paeth, 16, 64, avx2),
-  lowbd_entry(paeth, 32, 16, avx2),   lowbd_entry(paeth, 32, 32, avx2),
-  lowbd_entry(paeth, 32, 64, avx2),   lowbd_entry(paeth, 64, 16, avx2),
+  lowbd_entry(paeth, 16, 32, avx2),   lowbd_entry(paeth, 32, 16, avx2),
+  lowbd_entry(paeth, 32, 32, avx2),   lowbd_entry(paeth, 32, 64, avx2),
   lowbd_entry(paeth, 64, 32, avx2),   lowbd_entry(paeth, 64, 64, avx2),
+#else
+  lowbd_entry(dc, 32, 16, avx2),      lowbd_entry(dc, 32, 32, avx2),
+  lowbd_entry(dc, 32, 64, avx2),      lowbd_entry(dc, 64, 32, avx2),
+  lowbd_entry(dc, 64, 64, avx2),
+
+  lowbd_entry(dc_top, 32, 16, avx2),  lowbd_entry(dc_top, 32, 32, avx2),
+  lowbd_entry(dc_top, 32, 64, avx2),  lowbd_entry(dc_top, 64, 32, avx2),
+  lowbd_entry(dc_top, 64, 64, avx2),
+
+  lowbd_entry(dc_left, 32, 16, avx2), lowbd_entry(dc_left, 32, 32, avx2),
+  lowbd_entry(dc_left, 32, 64, avx2), lowbd_entry(dc_left, 64, 32, avx2),
+  lowbd_entry(dc_left, 64, 64, avx2),
+
+  lowbd_entry(dc_128, 32, 16, avx2),  lowbd_entry(dc_128, 32, 32, avx2),
+  lowbd_entry(dc_128, 32, 64, avx2),  lowbd_entry(dc_128, 64, 32, avx2),
+  lowbd_entry(dc_128, 64, 64, avx2),
+
+  lowbd_entry(v, 32, 16, avx2),       lowbd_entry(v, 32, 32, avx2),
+  lowbd_entry(v, 32, 64, avx2),       lowbd_entry(v, 64, 32, avx2),
+  lowbd_entry(v, 64, 64, avx2),
+
+  lowbd_entry(h, 32, 32, avx2),
+
+  lowbd_entry(paeth, 16, 8, avx2),    lowbd_entry(paeth, 16, 16, avx2),
+  lowbd_entry(paeth, 16, 32, avx2),   lowbd_entry(paeth, 32, 16, avx2),
+  lowbd_entry(paeth, 32, 32, avx2),   lowbd_entry(paeth, 32, 64, avx2),
+  lowbd_entry(paeth, 64, 32, avx2),   lowbd_entry(paeth, 64, 64, avx2),
+#endif  // !CONFIG_REALTIME_ONLY || CONFIG_AV1_DECODER
 };
 
 INSTANTIATE_TEST_SUITE_P(AVX2, LowbdIntraPredTest,
@@ -420,13 +453,11 @@ INSTANTIATE_TEST_SUITE_P(AVX2, LowbdIntraPredTest,
 #if CONFIG_AV1_HIGHBITDEPTH
 #if HAVE_NEON
 const IntraPredFunc<HighbdIntraPred> HighbdIntraPredTestVectorNeon[] = {
-  highbd_entry(dc, 4, 4, neon, 8),      highbd_entry(dc, 8, 8, neon, 8),
-  highbd_entry(dc, 16, 16, neon, 8),    highbd_entry(dc, 32, 32, neon, 8),
-  highbd_entry(dc, 64, 64, neon, 8),
-
-  highbd_intrapred(v, neon, 12),        highbd_intrapred(paeth, neon, 12),
-  highbd_intrapred(smooth, neon, 12),   highbd_intrapred(smooth_v, neon, 12),
-  highbd_intrapred(smooth_h, neon, 12),
+  highbd_intrapred(dc, neon, 12),       highbd_intrapred(dc_top, neon, 12),
+  highbd_intrapred(dc_left, neon, 12),  highbd_intrapred(dc_128, neon, 12),
+  highbd_intrapred(v, neon, 12),        highbd_intrapred(h, neon, 12),
+  highbd_intrapred(paeth, neon, 12),    highbd_intrapred(smooth, neon, 12),
+  highbd_intrapred(smooth_v, neon, 12), highbd_intrapred(smooth_h, neon, 12),
 };
 
 INSTANTIATE_TEST_SUITE_P(NEON, HighbdIntraPredTest,

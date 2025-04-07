@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2021, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -48,6 +48,7 @@ static const struct arg_enum_list tuning_enum[] = {
   { "vmaf_neg", AOM_TUNE_VMAF_NEG_MAX_GAIN },
   { "butteraugli", AOM_TUNE_BUTTERAUGLI },
   { "vmaf_saliency_map", AOM_TUNE_VMAF_SALIENCY_MAP },
+  { "ssimulacra2", AOM_TUNE_SSIMULACRA2 },
   { NULL, 0 }
 };
 
@@ -140,12 +141,6 @@ static const struct arg_enum_list color_primaries_enum[] = {
   { "ebu3213", AOM_CICP_CP_EBU_3213 },
   { NULL, 0 }
 };
-
-static const struct arg_enum_list global_motion_method_enum[] = {
-  { "feature-match", GLOBAL_MOTION_METHOD_FEATURE_MATCH },
-  { "disflow", GLOBAL_MOTION_METHOD_DISFLOW },
-  { NULL, 0 }
-};
 #endif  // CONFIG_AV1_ENCODER
 
 const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
@@ -233,13 +228,17 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
       ARG_DEF(NULL, "use-16bit-internal", 0, "Force use of 16-bit pipeline"),
   .dropframe_thresh =
       ARG_DEF(NULL, "drop-frame", 1, "Temporal resampling threshold (buf %)"),
-  .resize_mode = ARG_DEF(NULL, "resize-mode", 1, "Frame resize mode"),
+  .resize_mode = ARG_DEF(
+      NULL, "resize-mode", 1,
+      "Frame resize mode (0: off (default), 1: fixed, 2: random, 3: dynamic)"),
   .resize_denominator =
       ARG_DEF(NULL, "resize-denominator", 1, "Frame resize denominator"),
   .resize_kf_denominator = ARG_DEF(NULL, "resize-kf-denominator", 1,
                                    "Frame resize keyframe denominator"),
   .superres_mode =
-      ARG_DEF(NULL, "superres-mode", 1, "Frame super-resolution mode"),
+      ARG_DEF(NULL, "superres-mode", 1,
+              "Frame super-resolution mode (0: disabled (default), 1: fixed, "
+              "2: random, 3: qthresh, 4: auto)"),
   .superres_denominator = ARG_DEF(NULL, "superres-denominator", 1,
                                   "Frame super-resolution denominator"),
   .superres_kf_denominator =
@@ -282,10 +281,11 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
   .save_as_annexb = ARG_DEF(NULL, "annexb", 1, "Save as Annex-B"),
   .noise_sens = ARG_DEF(NULL, "noise-sensitivity", 1,
                         "Noise sensitivity (frames to blur)"),
-  .sharpness = ARG_DEF(NULL, "sharpness", 1,
-                       "Bias towards block sharpness in rate-distortion "
-                       "optimization of transform coefficients "
-                       "(0..7), default is 0"),
+  .sharpness =
+      ARG_DEF(NULL, "sharpness", 1,
+              "Bias towards block sharpness in rate-distortion optimization of "
+              "transform coefficients and (in allintra mode only) reduce block "
+              "edge filtering for better sharpness (0..7), default is 0"),
   .static_thresh =
       ARG_DEF(NULL, "static-thresh", 1, "Motion detection threshold"),
   .auto_altref =
@@ -305,7 +305,7 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
       ARG_DEF(NULL, "max-intra-rate", 1, "Max I-frame bitrate (pct)"),
 #if CONFIG_AV1_ENCODER
   .cpu_used_av1 = ARG_DEF(NULL, "cpu-used", 1,
-                          "Speed setting (0..6 in good mode, 5..10 in realtime "
+                          "Speed setting (0..6 in good mode, 5..11 in realtime "
                           "mode, 0..9 in all intra mode)"),
   .rowmtarg =
       ARG_DEF(NULL, "row-mt", 1,
@@ -317,6 +317,8 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
       ARG_DEF(NULL, "tile-columns", 1, "Number of tile columns to use, log2"),
   .tile_rows =
       ARG_DEF(NULL, "tile-rows", 1, "Number of tile rows to use, log2"),
+  .auto_tiles = ARG_DEF(NULL, "auto-tiles", 1,
+                        "Enable auto tiles (0: false (default), 1: true)"),
   .enable_tpl_model = ARG_DEF(NULL, "enable-tpl-model", 1,
                               "RDO based on frame temporal dependency "
                               "(0: off, 1: backward source based); "
@@ -335,7 +337,8 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
   .enable_cdef = ARG_DEF(
       NULL, "enable-cdef", 1,
       "Enable the constrained directional enhancement filter (0: false, "
-      "1: true (default), 2: disable for non-reference frames)"),
+      "1: true (default), 2: disable for non-reference frames, 3: enable "
+      "adaptively on frame qindex)"),
   .enable_restoration = ARG_DEF(NULL, "enable-restoration", 1,
                                 "Enable the loop restoration filter (0: false "
                                 "(default in realtime mode), "
@@ -459,10 +462,12 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
   .enable_qm =
       ARG_DEF(NULL, "enable-qm", 1,
               "Enable quantisation matrices (0: false (default), 1: true)"),
-  .qm_min = ARG_DEF(NULL, "qm-min", 1,
-                    "Min quant matrix flatness (0..15), default is 8"),
-  .qm_max = ARG_DEF(NULL, "qm-max", 1,
-                    "Max quant matrix flatness (0..15), default is 15"),
+  .qm_min = ARG_DEF(
+      NULL, "qm-min", 1,
+      "Min quant matrix flatness (0..15), default is 5 (4 for allintra mode)"),
+  .qm_max = ARG_DEF(
+      NULL, "qm-max", 1,
+      "Max quant matrix flatness (0..15), default is 9 (10 for allintra mode)"),
   .reduced_tx_type_set = ARG_DEF(NULL, "reduced-tx-type-set", 1,
                                  "Use reduced set of transform types"),
   .use_intra_dct_only =
@@ -700,9 +705,5 @@ const av1_codec_arg_definitions_t g_av1_codec_arg_defs = {
       ARG_DEF(NULL, "sb-qp-sweep", 1,
               "When set to 1, enable the superblock level qp sweep for a "
               "given lambda to minimize the rdcost."),
-  .global_motion_method = ARG_DEF_ENUM(NULL, "global-motion-method", 1,
-                                       "Global motion search method "
-                                       "(default: disflow):",
-                                       global_motion_method_enum),
 #endif  // CONFIG_AV1_ENCODER
 };

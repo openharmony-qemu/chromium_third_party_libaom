@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -20,14 +20,15 @@
 #include "aom_dsp/aom_dsp_common.h"
 #include "aom_dsp/flow_estimation/corner_detect.h"
 #include "aom_mem/aom_mem.h"
+#include "aom_util/aom_pthread.h"
 #include "av1/common/common.h"
 
 #define FAST_BARRIER 18
 
-size_t av1_get_corner_list_size() { return sizeof(CornerList); }
+size_t av1_get_corner_list_size(void) { return sizeof(CornerList); }
 
-CornerList *av1_alloc_corner_list() {
-  CornerList *corners = (CornerList *)aom_calloc(1, sizeof(CornerList));
+CornerList *av1_alloc_corner_list(void) {
+  CornerList *corners = (CornerList *)aom_calloc(1, sizeof(*corners));
   if (!corners) {
     return NULL;
   }
@@ -39,24 +40,39 @@ CornerList *av1_alloc_corner_list() {
   return corners;
 }
 
-void compute_corner_list(const ImagePyramid *pyr, CornerList *corners) {
-  const uint8_t *buf = pyr->layers[0].buffer;
-  int width = pyr->layers[0].width;
-  int height = pyr->layers[0].height;
-  int stride = pyr->layers[0].stride;
+static bool compute_corner_list(const YV12_BUFFER_CONFIG *frame, int bit_depth,
+                                int downsample_level, CornerList *corners) {
+  ImagePyramid *pyr = frame->y_pyramid;
+  const int layers =
+      aom_compute_pyramid(frame, bit_depth, downsample_level + 1, pyr);
+
+  if (layers < 0) {
+    return false;
+  }
+
+  // Clamp downsampling ratio base on max number of layers allowed
+  // for this frame size
+  downsample_level = layers - 1;
+
+  const uint8_t *buf = pyr->layers[downsample_level].buffer;
+  int width = pyr->layers[downsample_level].width;
+  int height = pyr->layers[downsample_level].height;
+  int stride = pyr->layers[downsample_level].stride;
 
   int *scores = NULL;
   int num_corners;
   xy *const frame_corners_xy = aom_fast9_detect_nonmax(
       buf, width, height, stride, FAST_BARRIER, &scores, &num_corners);
+  if (num_corners < 0) return false;
 
-  if (num_corners <= 0) {
-    // Some error occured, so no corners are available
-    corners->num_corners = 0;
-  } else if (num_corners <= MAX_CORNERS) {
+  if (num_corners <= MAX_CORNERS) {
     // Use all detected corners
-    memcpy(corners->corners, frame_corners_xy,
-           sizeof(*frame_corners_xy) * num_corners);
+    for (int i = 0; i < num_corners; i++) {
+      corners->corners[2 * i + 0] =
+          frame_corners_xy[i].x * (1 << downsample_level);
+      corners->corners[2 * i + 1] =
+          frame_corners_xy[i].y * (1 << downsample_level);
+    }
     corners->num_corners = num_corners;
   } else {
     // There are more than MAX_CORNERS corners avilable, so pick out a subset
@@ -85,8 +101,10 @@ void compute_corner_list(const ImagePyramid *pyr, CornerList *corners) {
     for (int i = 0; i < num_corners; i++) {
       if (scores[i] > threshold) {
         assert(copied_corners < MAX_CORNERS);
-        corners->corners[2 * copied_corners + 0] = frame_corners_xy[i].x;
-        corners->corners[2 * copied_corners + 1] = frame_corners_xy[i].y;
+        corners->corners[2 * copied_corners + 0] =
+            frame_corners_xy[i].x * (1 << downsample_level);
+        corners->corners[2 * copied_corners + 1] =
+            frame_corners_xy[i].y * (1 << downsample_level);
         copied_corners += 1;
       }
     }
@@ -96,9 +114,11 @@ void compute_corner_list(const ImagePyramid *pyr, CornerList *corners) {
 
   free(scores);
   free(frame_corners_xy);
+  return true;
 }
 
-void av1_compute_corner_list(const ImagePyramid *pyr, CornerList *corners) {
+bool av1_compute_corner_list(const YV12_BUFFER_CONFIG *frame, int bit_depth,
+                             int downsample_level, CornerList *corners) {
   assert(corners);
 
 #if CONFIG_MULTITHREAD
@@ -106,13 +126,15 @@ void av1_compute_corner_list(const ImagePyramid *pyr, CornerList *corners) {
 #endif  // CONFIG_MULTITHREAD
 
   if (!corners->valid) {
-    compute_corner_list(pyr, corners);
-    corners->valid = true;
+    corners->valid =
+        compute_corner_list(frame, bit_depth, downsample_level, corners);
   }
+  bool valid = corners->valid;
 
 #if CONFIG_MULTITHREAD
   pthread_mutex_unlock(&corners->mutex);
 #endif  // CONFIG_MULTITHREAD
+  return valid;
 }
 
 #ifndef NDEBUG
