@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "aom",
+        "License":"BSD-2-Clause",
+        "License File": "LICENSE",
+        "Version Number": "be60f06ab420d6a65c477213f04c8b0f2e12ba2e",
+        "Owner": "huamengzheng@huawei.com",
+        "Upstream URL": "https://chromium.googlesource.com/aom.git@be60f06ab420d6a65c477213f04c8b0f2e12ba2e",
+        "Description": "第三方软件libaom，AV1的官方软件"
+    }
+]
