@@ -482,6 +482,14 @@ typedef struct HIGH_LEVEL_SPEED_FEATURES {
    * 1: Conditionally allow motion estimation based on 4x4 sub-blocks variance.
    */
   int allow_sub_blk_me_in_tf;
+
+  /*!
+   * Decide whether to disable temporal mv prediction.
+   * 0: Do not disable
+   * 1: Conditionally disable
+   * 2: Always disable
+   */
+  int ref_frame_mvs_lvl;
 } HIGH_LEVEL_SPEED_FEATURES;
 
 /*!
@@ -592,6 +600,10 @@ typedef struct GLOBAL_MOTION_SPEED_FEATURES {
 
   // Number of refinement steps to apply after initial model generation
   int num_refinement_steps;
+
+  // Error advantage threshold level used to determine whether global motion
+  // compensation should be enabled
+  int gm_erroradv_tr_level;
 } GLOBAL_MOTION_SPEED_FEATURES;
 
 typedef struct PARTITION_SPEED_FEATURES {
@@ -822,6 +834,11 @@ typedef struct PARTITION_SPEED_FEATURES {
 
   // Disables 8x8 and below partitions for low quantizers.
   int disable_8x8_part_based_on_qidx;
+
+  // Decoder side speed feature to add penalty for use of smaller partitions.
+  // Takes values 0 - 2, 0 indicating no penalty and higher level indicating
+  // increased penalty.
+  int split_partition_penalty_level;
 } PARTITION_SPEED_FEATURES;
 
 typedef struct MV_SPEED_FEATURES {
@@ -1169,6 +1186,11 @@ typedef struct INTER_MODE_SPEED_FEATURES {
   // Speed 2: 2%  faster, 0.05% psnr loss.
   // No change for speed 3 and up, because |disable_onesided_comp| is true.
   int skip_arf_compound;
+
+  // Percentage of scaling used to increase the rd cost of warp mode so that
+  // encoder decisions are biased against local warp, favoring low complexity
+  // modes.
+  int bias_warp_mode_rd_scale_pct;
 } INTER_MODE_SPEED_FEATURES;
 
 typedef struct INTERP_FILTER_SPEED_FEATURES {
@@ -1498,6 +1520,15 @@ typedef struct LOOP_FILTER_SPEED_FEATURES {
   // level.
   int use_coarse_filter_level_search;
 
+  // Reset luma filter levels to zero based on minimum filter levels of
+  // reference frames and current frame's pyramid level.
+  int adaptive_luma_loop_filter_skip;
+
+  // Reset luma filter levels to zero when the percentage of SSE difference
+  // between the unfiltered and filtered versions of the current frame is below
+  // a threshold.
+  int skip_loop_filter_using_filt_error;
+
   // Control how the CDEF strength is determined.
   CDEF_PICK_METHOD cdef_pick_method;
 
@@ -1635,7 +1666,7 @@ typedef struct REAL_TIME_SPEED_FEATURES {
   // palette mode is used. Disabling it leads to better compression efficiency.
   // 0: off
   // 1: less aggressive pruning mode
-  // 2: more aggressive pruning mode
+  // 2, 3: more aggressive pruning mode
   int prune_palette_search_nonrd;
 
   // Compute variance/sse on source difference, prior to encoding superblock.
@@ -1929,6 +1960,9 @@ typedef struct REAL_TIME_SPEED_FEATURES {
   // Flag to indicate more aggressive QP downward adjustment for screen static
   // content, to make convergence to min_qp faster.
   int rc_faster_convergence_static;
+
+  // Skip NEWMV mode evaluation based on sad for screen content.
+  int skip_newmv_mode_sad_screen;
 } REAL_TIME_SPEED_FEATURES;
 
 /*!\endcond */

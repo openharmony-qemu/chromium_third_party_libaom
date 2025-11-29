@@ -1218,10 +1218,13 @@ static inline void set_ref_frame_for_partition(
     const YV12_BUFFER_CONFIG *yv12_g, const YV12_BUFFER_CONFIG *yv12_alt,
     int mi_row, int mi_col, int num_planes) {
   AV1_COMMON *const cm = &cpi->common;
+  const double fac =
+      (cpi->svc.spatial_layer_id > 0 && cpi->svc.has_lower_quality_layer) ? 1.0
+                                                                          : 0.9;
   const bool is_set_golden_ref_frame =
-      *y_sad_g < 0.9 * *y_sad && *y_sad_g < *y_sad_alt;
+      *y_sad_g < fac * *y_sad && *y_sad_g < *y_sad_alt;
   const bool is_set_altref_ref_frame =
-      *y_sad_alt < 0.9 * *y_sad && *y_sad_alt < *y_sad_g;
+      *y_sad_alt < fac * *y_sad && *y_sad_alt < *y_sad_g;
 
   if (is_set_golden_ref_frame) {
     av1_setup_pre_planes(xd, 0, yv12_g, mi_row, mi_col,
@@ -1325,6 +1328,53 @@ static inline void evaluate_neighbour_mvs(AV1_COMP *cpi, MACROBLOCK *x,
   }
 }
 
+static void do_int_pro_motion_estimation(AV1_COMP *cpi, MACROBLOCK *x,
+                                         unsigned int *y_sad, int mi_row,
+                                         int mi_col, int source_sad_nonrd) {
+  AV1_COMMON *const cm = &cpi->common;
+  MACROBLOCKD *xd = &x->e_mbd;
+  MB_MODE_INFO *mi = xd->mi[0];
+  const int is_screen = cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN;
+  const int increase_col_sw = source_sad_nonrd > kMedSad &&
+                              !cpi->rc.high_motion_content_screen_rtc &&
+                              (cpi->svc.temporal_layer_id == 0 ||
+                               cpi->rc.num_col_blscroll_last_tl0 > 2);
+  int me_search_size_col = is_screen
+                               ? increase_col_sw ? 512 : 96
+                               : block_size_wide[cm->seq_params->sb_size] >> 1;
+  // For screen use larger search size row motion to capture
+  // vertical scroll, which can be larger motion.
+  int me_search_size_row = is_screen
+                               ? source_sad_nonrd > kMedSad ? 512 : 192
+                               : block_size_high[cm->seq_params->sb_size] >> 1;
+  unsigned int y_sad_zero;
+  *y_sad = av1_int_pro_motion_estimation(
+      cpi, x, cm->seq_params->sb_size, mi_row, mi_col, &kZeroMv, &y_sad_zero,
+      me_search_size_col, me_search_size_row);
+  // The logic below selects whether the motion estimated in the
+  // int_pro_motion() will be used in nonrd_pickmode. Only do this
+  // for screen for now.
+  if (is_screen) {
+    unsigned int thresh_sad =
+        (cm->seq_params->sb_size == BLOCK_128X128) ? 50000 : 20000;
+    if (*y_sad < (y_sad_zero >> 1) && *y_sad < thresh_sad) {
+      x->sb_me_partition = 1;
+      x->sb_me_mv.as_int = mi->mv[0].as_int;
+      if (cpi->svc.temporal_layer_id == 0) {
+        if (abs(mi->mv[0].as_mv.col) > 16 && abs(mi->mv[0].as_mv.row) == 0)
+          x->sb_col_scroll = 1;
+        else if (abs(mi->mv[0].as_mv.row) > 16 && abs(mi->mv[0].as_mv.col) == 0)
+          x->sb_row_scroll = 1;
+      }
+    } else {
+      x->sb_me_partition = 0;
+      // Fall back to using zero motion.
+      *y_sad = y_sad_zero;
+      mi->mv[0].as_int = 0;
+    }
+  }
+}
+
 static void setup_planes(AV1_COMP *cpi, MACROBLOCK *x, unsigned int *y_sad,
                          unsigned int *y_sad_g, unsigned int *y_sad_alt,
                          unsigned int *y_sad_last,
@@ -1354,9 +1404,11 @@ static void setup_planes(AV1_COMP *cpi, MACROBLOCK *x, unsigned int *y_sad,
                     (cpi->sf.rt_sf.use_comp_ref_nonrd &&
                      cpi->sf.rt_sf.ref_frame_comp_nonrd[2] == 1);
 
-  // For 1 spatial layer: GOLDEN is another temporal reference.
-  // Check if it should be used as reference for partitioning.
-  if (cpi->svc.number_spatial_layers == 1 && use_golden_ref &&
+  // Check if GOLDEN should be used as reference for partitioning.
+  // Allow for spatial layers if lower layer has same resolution.
+  if ((cpi->svc.number_spatial_layers == 1 ||
+       cpi->svc.has_lower_quality_layer) &&
+      use_golden_ref &&
       (x->content_state_sb.source_sad_nonrd != kZeroSad || !use_last_ref)) {
     yv12_g = get_ref_frame_yv12_buf(cm, GOLDEN_FRAME);
     if (yv12_g && (yv12_g->y_crop_height != cm->height ||
@@ -1376,10 +1428,11 @@ static void setup_planes(AV1_COMP *cpi, MACROBLOCK *x, unsigned int *y_sad,
     }
   }
 
-  // For 1 spatial layer: ALTREF is another temporal reference.
-  // Check if it should be used as reference for partitioning.
-  if (cpi->svc.number_spatial_layers == 1 && use_alt_ref &&
-      (cpi->ref_frame_flags & AOM_ALT_FLAG) &&
+  // Check if ALTREF should be used as reference for partitioning.
+  // Allow for spatial layers if lower layer has same resolution.
+  if ((cpi->svc.number_spatial_layers == 1 ||
+       cpi->svc.has_lower_quality_layer) &&
+      use_alt_ref && (cpi->ref_frame_flags & AOM_ALT_FLAG) &&
       (x->content_state_sb.source_sad_nonrd != kZeroSad || !use_last_ref)) {
     yv12_alt = get_ref_frame_yv12_buf(cm, ALTREF_FRAME);
     if (yv12_alt && (yv12_alt->y_crop_height != cm->height ||
@@ -1418,40 +1471,11 @@ static void setup_planes(AV1_COMP *cpi, MACROBLOCK *x, unsigned int *y_sad,
     // so for now force it to 2 based on superblock sad.
     if (est_motion > 2 && source_sad_nonrd > kMedSad) est_motion = 2;
 
-    if (est_motion == 1 || est_motion == 2) {
-      if (xd->mb_to_right_edge >= 0 && xd->mb_to_bottom_edge >= 0) {
-        // For screen only do int_pro_motion for spatial variance above
-        // threshold and motion level above LowSad.
-        if (x->source_variance > 100 && source_sad_nonrd > kLowSad) {
-          int is_screen = cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN;
-          int me_search_size_col =
-              is_screen ? 96 : block_size_wide[cm->seq_params->sb_size] >> 1;
-          // For screen use larger search size row motion to capture
-          // vertical scroll, which can be larger motion.
-          int me_search_size_row =
-              is_screen ? 192 : block_size_high[cm->seq_params->sb_size] >> 1;
-          unsigned int y_sad_zero;
-          *y_sad = av1_int_pro_motion_estimation(
-              cpi, x, cm->seq_params->sb_size, mi_row, mi_col, &kZeroMv,
-              &y_sad_zero, me_search_size_col, me_search_size_row);
-          // The logic below selects whether the motion estimated in the
-          // int_pro_motion() will be used in nonrd_pickmode. Only do this
-          // for screen for now.
-          if (is_screen) {
-            unsigned int thresh_sad =
-                (cm->seq_params->sb_size == BLOCK_128X128) ? 50000 : 20000;
-            if (*y_sad < (y_sad_zero >> 1) && *y_sad < thresh_sad) {
-              x->sb_me_partition = 1;
-              x->sb_me_mv.as_int = mi->mv[0].as_int;
-            } else {
-              x->sb_me_partition = 0;
-              // Fall back to using zero motion.
-              *y_sad = y_sad_zero;
-              mi->mv[0].as_int = 0;
-            }
-          }
-        }
-      }
+    if ((est_motion == 1 || est_motion == 2) && xd->mb_to_right_edge >= 0 &&
+        xd->mb_to_bottom_edge >= 0 && x->source_variance > 100 &&
+        source_sad_nonrd > kLowSad) {
+      do_int_pro_motion_estimation(cpi, x, y_sad, mi_row, mi_col,
+                                   source_sad_nonrd);
     }
 
     if (*y_sad == UINT_MAX) {
