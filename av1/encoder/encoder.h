@@ -166,7 +166,9 @@ enum {
   DELTA_Q_PERCEPTUAL = 2,     // Modulation to improve video perceptual quality
   DELTA_Q_PERCEPTUAL_AI = 3,  // Perceptual quality opt for all intra mode
   DELTA_Q_USER_RATING_BASED = 4,  // User rating based delta q mode
-  DELTA_Q_HDR = 5,    // QP adjustment based on HDR block pixel average
+  DELTA_Q_HDR = 5,  // QP adjustment based on HDR block pixel average
+  DELTA_Q_VARIANCE_BOOST =
+      6,              // Variance Boost style modulation for all intra mode
   DELTA_Q_MODE_COUNT  // This should always be the last member of the enum
 } UENUM1BYTE(DELTAQ_MODE);
 
@@ -883,6 +885,11 @@ typedef struct {
    * on reconstructed frame.
    */
   bool skip_postproc_filtering;
+
+  /*!
+   * Controls screen content detection mode
+   */
+  aom_screen_detection_mode screen_detection_mode;
 } AlgoCfg;
 /*!\cond */
 
@@ -1038,6 +1045,9 @@ typedef struct AV1EncoderConfig {
 
   // Indicates the speed preset to be used.
   int speed;
+
+  // Enable the low complexity decode mode.
+  unsigned int enable_low_complexity_decode;
 
   // Indicates the target sequence level index for each operating point(OP).
   AV1_LEVEL target_seq_level_idx[MAX_NUM_OPERATING_POINTS];
@@ -2670,7 +2680,11 @@ typedef struct AV1_PRIMARY {
   /*!
    * Sequence parameters have been transmitted already and locked
    * or not. Once locked av1_change_config cannot change the seq
-   * parameters.
+   * parameters. Note that for SVC encoding the sequence parameters
+   * (operating_points_cnt_minus_1, operating_point_idc[],
+   * has_nonzero_operating_point_idc) should be updated whenever the
+   * number of layers is changed. This is done in the
+   * ctrl_set_svc_params().
    */
   int seq_params_locked;
 
@@ -3672,6 +3686,11 @@ typedef struct AV1_COMP {
    * so scaling is not needed for last_source.
    */
   int scaled_last_source_available;
+
+  /*!
+   * ROI map.
+   */
+  aom_roi_map_t roi;
 } AV1_COMP;
 
 /*!
@@ -3864,6 +3883,10 @@ void av1_set_frame_size(AV1_COMP *cpi, int width, int height);
 
 void av1_set_mv_search_params(AV1_COMP *cpi);
 
+int av1_set_roi_map(AV1_COMP *cpi, unsigned char *map, unsigned int rows,
+                    unsigned int cols, int delta_q[8], int delta_lf[8],
+                    int skip[8], int ref_frame[8]);
+
 int av1_set_active_map(AV1_COMP *cpi, unsigned char *map, int rows, int cols);
 
 int av1_get_active_map(AV1_COMP *cpi, unsigned char *map, int rows, int cols);
@@ -3884,6 +3907,12 @@ void av1_alloc_mb_wiener_var_pred_buf(AV1_COMMON *cm, ThreadData *td);
 
 void av1_dealloc_mb_wiener_var_pred_buf(ThreadData *td);
 
+uint8_t av1_find_dominant_value(const uint8_t *src, int stride, int rows,
+                                int cols);
+
+void av1_dilate_block(const uint8_t *src, int src_stride, uint8_t *dilated,
+                      int dilated_stride, int rows, int cols);
+
 // Set screen content options.
 // This function estimates whether to use screen content tools, by counting
 // the portion of blocks that have few luma colors.
@@ -3899,6 +3928,8 @@ void av1_set_screen_content_options(struct AV1_COMP *cpi,
                                     FeatureFlags *features);
 
 void av1_update_frame_size(AV1_COMP *cpi);
+
+void av1_set_svc_seq_params(AV1_PRIMARY *const ppi);
 
 typedef struct {
   int pyr_level;
@@ -4402,6 +4433,8 @@ static inline void set_postproc_filter_default_params(AV1_COMMON *cm) {
 
   lf->filter_level[0] = 0;
   lf->filter_level[1] = 0;
+  lf->backup_filter_level[0] = 0;
+  lf->backup_filter_level[1] = 0;
   cdef_info->cdef_bits = 0;
   cdef_info->cdef_strengths[0] = 0;
   cdef_info->nb_cdef_strengths = 1;

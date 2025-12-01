@@ -322,10 +322,10 @@ static int search_new_mv(AV1_COMP *cpi, MACROBLOCK *x,
 
     int me_search_size_col = block_size_wide[bsize] >> 1;
     int me_search_size_row = block_size_high[bsize] >> 1;
+    MV ref_mv = av1_get_ref_mv(x, 0).as_mv;
     tmp_sad = av1_int_pro_motion_estimation(
-        cpi, x, bsize, mi_row, mi_col,
-        &x->mbmi_ext.ref_mv_stack[ref_frame][0].this_mv.as_mv, &y_sad_zero,
-        me_search_size_col, me_search_size_row);
+        cpi, x, bsize, mi_row, mi_col, &ref_mv, &y_sad_zero, me_search_size_col,
+        me_search_size_row);
 
     if (tmp_sad > x->pred_mv_sad[LAST_FRAME]) return -1;
 
@@ -333,7 +333,6 @@ static int search_new_mv(AV1_COMP *cpi, MACROBLOCK *x,
     int_mv best_mv = mi->mv[0];
     best_mv.as_mv.row >>= 3;
     best_mv.as_mv.col >>= 3;
-    MV ref_mv = av1_get_ref_mv(x, 0).as_mv;
     this_ref_frm_newmv->as_mv.row >>= 3;
     this_ref_frm_newmv->as_mv.col >>= 3;
 
@@ -601,6 +600,14 @@ static inline void set_early_term_based_on_uv_plane(
   if (cpi->sf.rt_sf.increase_source_sad_thresh) {
     dc_thr = dc_thr << 1;
     ac_thr = ac_thr << 2;
+  }
+
+  if (cpi->common.width * cpi->common.height >= 1280 * 720 &&
+      cpi->oxcf.tune_cfg.content != AOM_CONTENT_SCREEN &&
+      x->content_state_sb.source_sad_nonrd > kLowSad &&
+      (sse >> (bw + bh)) > 1000) {
+    dc_thr = dc_thr >> 4;
+    ac_thr = ac_thr >> 4;
   }
 
   for (int k = 0; k < num_blk; k++) {
@@ -1583,6 +1590,8 @@ void av1_nonrd_pick_intra_mode(AV1_COMP *cpi, MACROBLOCK *x, RD_STATS *rd_cost,
   const int left_ctx = intra_mode_context[L];
   const unsigned int source_variance = x->source_variance;
   bmode_costs = x->mode_costs.y_mode_costs[above_ctx][left_ctx];
+  const int mi_row = xd->mi_row;
+  const int mi_col = xd->mi_col;
 
   av1_invalid_rd_stats(&best_rdc);
   av1_invalid_rd_stats(&this_rdc);
@@ -1594,6 +1603,12 @@ void av1_nonrd_pick_intra_mode(AV1_COMP *cpi, MACROBLOCK *x, RD_STATS *rd_cost,
   // mode tests.
   for (int mode_index = 0; mode_index < RTC_INTRA_MODES; ++mode_index) {
     PREDICTION_MODE this_mode = intra_mode_list[mode_index];
+
+    // Force DC for spatially flat block for large bsize, on top-left corner.
+    // This removed potential artifact observed in gray scale image for high Q.
+    if (x->source_variance == 0 && mi_col == 0 && mi_row == 0 &&
+        bsize >= BLOCK_32X32 && this_mode > 0)
+      continue;
 
     // As per the statistics generated for intra mode evaluation in the nonrd
     // path, it is found that the probability of H_PRED mode being the winner is
@@ -2010,7 +2025,7 @@ static void set_color_sensitivity(AV1_COMP *cpi, MACROBLOCK *x,
     }
     if (cpi->rc.percent_blocks_with_motion > 90 &&
         cpi->rc.frame_source_sad > 10000 && source_sad_nonrd > kLowSad) {
-      // Aggressive setting for color_sensitiivty for this content.
+      // Aggressive setting for color_sensitivity for this content.
       shift = 10;
       norm_uv_sad_thresh = 0;
       norm_uv_sad_thresh2 = 0;
@@ -2423,6 +2438,11 @@ static AOM_FORCE_INLINE bool skip_inter_mode_nonrd(
     *ref_frame = ref_mode_set[idx].ref_frame;
     *ref_frame2 = NONE_FRAME;
   }
+
+  if (cpi->sf.rt_sf.skip_newmv_mode_sad_screen && cpi->rc.high_source_sad &&
+      x->content_state_sb.source_sad_nonrd >= kMedSad && bsize <= BLOCK_16X16 &&
+      !x->sb_me_block && (*ref_frame != LAST_FRAME || *this_mode == NEWMV))
+    return true;
 
   if (segfeature_active(&cm->seg, segment_id, SEG_LVL_SKIP) &&
       (*this_mode != GLOBALMV || *ref_frame != LAST_FRAME))
@@ -3137,7 +3157,15 @@ static inline bool enable_palette(AV1_COMP *cpi, bool is_mode_intra,
                                   BLOCK_SIZE bsize,
                                   unsigned int source_variance,
                                   int force_zeromv_skip, int skip_idtx_palette,
-                                  int force_palette_test) {
+                                  int force_palette_test,
+                                  unsigned int best_intra_sad_norm) {
+  const unsigned int sad_thresh =
+      cpi->sf.rt_sf.prune_palette_search_nonrd > 2
+          ? (cpi->oxcf.frm_dim_cfg.width * cpi->oxcf.frm_dim_cfg.height <=
+             1280 * 720)
+                ? 6
+                : 12
+          : 10;
   if (!cpi->oxcf.tool_cfg.enable_palette) return false;
   if (!av1_allow_palette(cpi->common.features.allow_screen_content_tools,
                          bsize)) {
@@ -3150,6 +3178,10 @@ static inline bool enable_palette(AV1_COMP *cpi, bool is_mode_intra,
        bsize > BLOCK_16X16)) {
     return false;
   }
+
+  if (prune_palette_testing_inter(cpi, source_variance) &&
+      best_intra_sad_norm < sad_thresh)
+    return false;
 
   if ((is_mode_intra || force_palette_test) && source_variance > 0 &&
       !force_zeromv_skip &&
@@ -3503,21 +3535,29 @@ void av1_nonrd_pick_inter_mode_sb(AV1_COMP *cpi, TileDataEnc *tile_data,
   }
 
   // Evaluate Intra modes in inter frame
+  unsigned int best_intra_sad_norm = UINT_MAX;
   if (!x->force_zeromv_skip_for_blk)
     av1_estimate_intra_mode(cpi, x, bsize, best_early_term,
                             search_state.ref_costs_single[INTRA_FRAME],
                             reuse_inter_pred, &orig_dst, tmp_buffer,
                             &this_mode_pred, &search_state.best_rdc,
-                            best_pickmode, ctx);
+                            best_pickmode, ctx, &best_intra_sad_norm);
 
   int skip_idtx_palette = (x->color_sensitivity[COLOR_SENS_IDX(AOM_PLANE_U)] ||
                            x->color_sensitivity[COLOR_SENS_IDX(AOM_PLANE_V)]) &&
                           x->content_state_sb.source_sad_nonrd != kZeroSad &&
-                          !cpi->rc.high_source_sad;
+                          !cpi->rc.high_source_sad &&
+                          (cpi->rc.high_motion_content_screen_rtc ||
+                           cpi->rc.frame_source_sad < 10000);
 
   bool try_palette = enable_palette(
       cpi, is_mode_intra(best_pickmode->best_mode), bsize, x->source_variance,
-      x->force_zeromv_skip_for_blk, skip_idtx_palette, force_palette_test);
+      x->force_zeromv_skip_for_blk, skip_idtx_palette, force_palette_test,
+      best_intra_sad_norm);
+
+  if (try_palette && prune_palette_testing_inter(cpi, x->source_variance))
+    x->color_palette_thresh =
+        cpi->sf.rt_sf.prune_palette_search_nonrd > 2 ? 20 : 32;
 
   // Perform screen content mode evaluation for non-rd
   handle_screen_content_mode_nonrd(
